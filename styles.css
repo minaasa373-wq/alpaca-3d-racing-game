@@ -1,0 +1,302 @@
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: system-ui, sans-serif;
+  background-color: #060608;
+  color: #f4f4f8;
+}
+
+#game-canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#overlay {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(420px, 92vw);
+  background: rgba(8, 10, 16, 0.6);
+  backdrop-filter: blur(8px);
+  padding: 14px 18px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.hud-header h1 {
+  margin: 0 0 4px;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+}
+
+.hud-instructions {
+  margin: 0;
+  font-size: 0.88rem;
+  color: rgba(244, 244, 248, 0.85);
+}
+
+.hud-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hud-card {
+  min-width: 90px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(18, 22, 36, 0.75);
+  box-shadow: inset 0 0 0 1px rgba(130, 160, 255, 0.18);
+}
+
+.hud-label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(176, 190, 222, 0.85);
+  margin-bottom: 2px;
+}
+
+.hud-value {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+#race-finish {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 6, 14, 0.78);
+  backdrop-filter: blur(6px);
+  z-index: 20;
+  transition: opacity 0.35s ease;
+}
+
+.race-finish.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.race-finish-panel {
+  max-width: min(420px, 90vw);
+  background: rgba(12, 16, 28, 0.92);
+  padding: 28px 32px;
+  border-radius: 18px;
+  box-shadow:
+    0 22px 40px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(120, 160, 255, 0.2);
+  text-align: center;
+  color: #eef1ff;
+}
+
+.race-finish-panel h2 {
+  margin: 0 0 12px;
+  font-size: 2rem;
+  letter-spacing: 0.05em;
+}
+
+.race-summary {
+  margin: 0 0 20px;
+  font-size: 0.95rem;
+  color: rgba(220, 230, 255, 0.8);
+}
+
+.race-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.race-metrics .metric-label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(180, 195, 230, 0.8);
+  margin-bottom: 6px;
+}
+
+.race-metrics .metric-value {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #fff59d;
+}
+
+.race-instructions {
+  margin: 0;
+  font-size: 0.88rem;
+  color: rgba(220, 230, 255, 0.72);
+}
+
+#hud-minimap {
+  position: absolute;
+  bottom: 18px;
+  right: 18px;
+  z-index: 9;
+  width: min(220px, 45vw);
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  background: rgba(10, 13, 20, 0.68);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(120, 150, 220, 0.28);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.hud-minimap.hidden {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+#minimap-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  flex: 1;
+}
+
+.minimap-label {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(220, 230, 255, 0.8);
+  pointer-events: none;
+}
+
+.map-select {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 8, 16, 0.86);
+  backdrop-filter: blur(12px);
+  z-index: 30;
+  transition: opacity 0.25s ease;
+}
+
+.map-select.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.map-select-panel {
+  width: min(520px, 92vw);
+  background: rgba(12, 16, 28, 0.92);
+  border-radius: 18px;
+  box-shadow:
+    0 26px 48px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(120, 160, 255, 0.22);
+  padding: 28px 32px 36px;
+  color: #e8ecff;
+}
+
+.map-select-panel h2 {
+  margin: 0 0 12px;
+  font-size: 2rem;
+  letter-spacing: 0.04em;
+}
+
+.map-select-hint {
+  margin: 0 0 22px;
+  font-size: 0.95rem;
+  color: rgba(210, 220, 255, 0.72);
+}
+
+.map-options {
+  display: grid;
+  gap: 14px;
+}
+
+.map-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: rgba(18, 22, 42, 0.78);
+  border: 1px solid rgba(126, 168, 255, 0.18);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.map-option:hover,
+.map-option:focus {
+  transform: translateY(-2px);
+  border-color: rgba(160, 200, 255, 0.45);
+  background: rgba(26, 34, 64, 0.88);
+  outline: none;
+}
+
+.map-option.default::after {
+  content: 'Recommended';
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 235, 130, 0.85);
+  background: rgba(60, 40, 12, 0.55);
+  padding: 4px 8px;
+  border-radius: 999px;
+  margin-left: auto;
+}
+
+.map-name {
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.map-desc {
+  font-size: 0.92rem;
+  color: rgba(210, 220, 255, 0.7);
+}
+
+@media (max-width: 640px) {
+  #overlay {
+    top: 10px;
+    left: 10px;
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .hud-card {
+    min-width: calc(50% - 6px);
+  }
+
+  #hud-minimap {
+    bottom: 12px;
+    right: 12px;
+    width: min(180px, 42vw);
+  }
+
+  .race-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .map-select-panel {
+    padding: 24px 22px 30px;
+  }
+}
