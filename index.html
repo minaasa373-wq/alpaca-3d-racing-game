@@ -22,7 +22,7 @@
     <div id="overlay">
       <div class="hud-header">
         <h1>あるぱかプリンス レーシング</h1>
-        <p class="hud-instructions">矢印キーまたは WASD で運転。マウス左クリックで加速。スペースでブレーキ。R で位置リセット。M でミニマップ切替。L でコース変更。B で音オン/オフ。Esc でタイトルへ戻る。</p>
+        <p class="hud-instructions">Esc キーで操作方法</p>
       </div>
       <div class="hud-stats">
         <div class="hud-card">
@@ -78,14 +78,21 @@
       </div>
     </div>
 
-    <!-- Esc 確認ダイアログ -->
-    <div id="confirm-title" class="confirm-dialog hidden">
-      <div class="confirm-panel">
-        <p class="confirm-message">タイトルに戻りますか？</p>
-        <div class="confirm-buttons">
-          <button type="button" id="confirm-yes" class="confirm-btn confirm-yes">はい</button>
-          <button type="button" id="confirm-no" class="confirm-btn confirm-no">いいえ</button>
-        </div>
+    <!-- Esc ポーズパネル：操作方法 + タイトルに戻るボタン -->
+    <div id="pause-panel" class="pause-panel hidden">
+      <div class="pause-panel-inner">
+        <h2>操作方法</h2>
+        <ul class="pause-controls-list">
+          <li><span class="key">W / ←クリック</span><span class="action">アクセル</span></li>
+          <li><span class="key">A・D / ←→</span><span class="action">ステアリング</span></li>
+          <li><span class="key">Space / →クリック</span><span class="action">ブレーキ</span></li>
+          <li><span class="key">R</span><span class="action">位置リセット</span></li>
+          <li><span class="key">M</span><span class="action">ミニマップ切替</span></li>
+          <li><span class="key">L</span><span class="action">コース変更</span></li>
+          <li><span class="key">B</span><span class="action">音のオン/オフ</span></li>
+        </ul>
+        <button type="button" id="pause-return-title" class="pause-return-btn">タイトルに戻る</button>
+        <p class="pause-resume-hint">もう一度 Esc を押すとゲームに戻ります</p>
       </div>
     </div>
 
