@@ -75,12 +75,38 @@ html, body {
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 18px;
   background: rgba(4, 6, 14, 0.78);
   backdrop-filter: blur(6px);
   z-index: 20;
   transition: opacity 0.35s ease;
+}
+
+.save-screenshot-btn {
+  padding: 12px 28px;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #d4af37, #7e57c2);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.save-screenshot-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.save-screenshot-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
 }
 
 .race-finish.hidden {
@@ -101,65 +127,68 @@ html, body {
   filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.55));
 }
 
-/* 額縁の内側（右側の紫の余白）に重ねるコンテンツ領域 */
+/* 額縁の内側（紫の表示領域）に重ねるコンテンツ領域 */
 .race-result-content {
   position: absolute;
-  top: 13%;
-  left: 41%;
-  right: 5.5%;
-  bottom: 31%;
+  top: 12%;
+  left: 37%;
+  right: 6%;
+  bottom: 34%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 2%;
+  justify-content: space-between;
   text-align: center;
   color: #f3eeff;
 }
 
-.race-result-content h2 {
+.race-result-title {
   margin: 0;
-  font-size: clamp(1.2rem, 3.2vw, 2.4rem);
-  letter-spacing: 0.06em;
-  color: #ffe9a8;
-  text-shadow: 0 2px 10px rgba(40, 16, 70, 0.8);
-}
-
-.race-summary {
-  margin: 0;
-  font-size: clamp(0.7rem, 1.5vw, 1rem);
-  color: rgba(235, 228, 255, 0.92);
-  text-shadow: 0 1px 6px rgba(30, 12, 55, 0.8);
-}
-
-.race-metrics {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(8px, 2vw, 24px);
-  width: 100%;
-}
-
-.race-metrics .metric-label {
-  display: block;
-  font-size: clamp(0.55rem, 1.1vw, 0.78rem);
-  text-transform: uppercase;
+  font-size: clamp(1.6rem, 3.6vw, 3rem);
+  font-weight: 800;
   letter-spacing: 0.08em;
-  color: rgba(214, 222, 255, 0.85);
-  margin-bottom: 4px;
-  text-shadow: 0 1px 5px rgba(30, 12, 55, 0.8);
+  color: #ffe9a8;
+  text-shadow: 0 2px 12px rgba(40, 16, 70, 0.85);
 }
 
-.race-metrics .metric-value {
-  font-size: clamp(0.72rem, 2.2vw, 1.6rem);
+.race-result-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: clamp(6px, 1.6vh, 18px);
+}
+
+.result-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: clamp(12px, 3vw, 40px);
+  width: 100%;
+  padding: 0 clamp(4px, 2vw, 28px);
+  box-sizing: border-box;
+}
+
+/* ラベルと値を同じフォントサイズに揃え、大きめに表示 */
+.result-label,
+.result-value {
+  font-size: clamp(1.1rem, 2.6vw, 2rem);
   font-weight: 700;
-  color: #ffe066;
-  text-shadow: 0 2px 8px rgba(40, 16, 70, 0.85);
+  line-height: 1.1;
   white-space: nowrap;
+  text-shadow: 0 2px 8px rgba(40, 16, 70, 0.85);
+}
+
+.result-label {
+  color: rgba(224, 230, 255, 0.92);
+}
+
+.result-value {
+  color: #ffe066;
 }
 
 .race-instructions {
   margin: 0;
-  font-size: clamp(0.7rem, 1.4vw, 0.92rem);
+  font-size: clamp(0.7rem, 1.4vw, 0.95rem);
   color: rgba(232, 226, 255, 0.85);
   text-shadow: 0 1px 6px rgba(30, 12, 55, 0.8);
 }
@@ -322,13 +351,122 @@ html, body {
     width: min(180px, 42vw);
   }
 
-  .race-result-content .race-metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .race-result-content {
+    bottom: 28%;
+    top: 11%;
+  }
+
+  .result-row {
+    padding: 0 6px;
   }
 
   .map-select-panel {
     padding: 24px 22px 30px;
   }
+}
+
+/* ===== BGM 音量スライダー（コース選択・ポーズ共通） ===== */
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(18, 22, 42, 0.6);
+  border: 1px solid rgba(126, 168, 255, 0.18);
+  pointer-events: auto;
+}
+
+.volume-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(224, 230, 255, 0.92);
+  white-space: nowrap;
+}
+
+.volume-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  outline: none;
+  cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d4af37, #7e57c2);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d4af37, #7e57c2);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
+.volume-value {
+  min-width: 2.5em;
+  text-align: right;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffe066;
+}
+
+/* ===== 3-2-1-START カウントダウン ===== */
+.countdown-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 45;
+  pointer-events: none;
+}
+
+.countdown-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.countdown-text {
+  font-size: clamp(5rem, 22vw, 16rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #ffe9a8;
+  text-shadow:
+    0 0 24px rgba(126, 87, 194, 0.9),
+    0 6px 20px rgba(20, 8, 40, 0.85);
+  -webkit-text-stroke: 3px rgba(94, 53, 177, 0.85);
+}
+
+/* 数字が出るたびに弾むアニメーション */
+.countdown-text.pop {
+  animation: countdown-pop 0.9s ease-out;
+}
+
+@keyframes countdown-pop {
+  0% { opacity: 0; transform: scale(2.2); }
+  18% { opacity: 1; transform: scale(1); }
+  80% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.85; transform: scale(0.92); }
+}
+
+/* START の文字はやや小さく横長に */
+.countdown-text.is-start {
+  font-size: clamp(3.5rem, 14vw, 10rem);
+  color: #fff176;
 }
 
 /* ===== タイトル画面 ===== */

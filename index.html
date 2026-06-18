@@ -17,6 +17,11 @@
         <h2>コースを選ぶ</h2>
         <p class="map-select-hint">走るサーキットを選んでください。プレイ中に L キーでいつでもこのメニューを開けます。</p>
         <div id="map-options" class="map-options"></div>
+        <div class="volume-control">
+          <label for="map-bgm-volume" class="volume-label">BGM 音量</label>
+          <input type="range" id="map-bgm-volume" class="volume-slider" min="0" max="100" step="1" value="45" />
+          <span id="map-bgm-volume-value" class="volume-value">45</span>
+        </div>
       </div>
     </div>
     <div id="overlay">
@@ -52,6 +57,10 @@
       </div>
     </div>
     <canvas id="game-canvas"></canvas>
+    <!-- 3-2-1-START カウントダウン表示 -->
+    <div id="countdown-overlay" class="countdown-overlay hidden">
+      <span id="countdown-text" class="countdown-text"></span>
+    </div>
     <div id="hud-minimap" class="hud-minimap visible">
       <canvas id="minimap-canvas" width="200" height="200"></canvas>
       <div class="minimap-label">ミニマップ · M キー</div>
@@ -59,25 +68,25 @@
     <div id="race-finish" class="race-finish hidden">
       <div class="race-result-frame">
         <div class="race-result-content">
-          <h2>レース終了</h2>
-          <p class="race-summary" id="race-summary"></p>
-          <div class="race-metrics">
-            <div>
-              <span class="metric-label">ポイント</span>
-              <span class="metric-value" id="summary-points">0</span>
+          <h2 class="race-result-title">レース終了</h2>
+          <div class="race-result-list">
+            <div class="result-row">
+              <span class="result-label">合計タイム</span>
+              <span class="result-value" id="summary-total">--</span>
             </div>
-            <div>
-              <span class="metric-label">ベストラップ</span>
-              <span class="metric-value" id="summary-best">--</span>
+            <div class="result-row">
+              <span class="result-label">ベストラップ</span>
+              <span class="result-value" id="summary-best">--</span>
             </div>
-            <div>
-              <span class="metric-label">前回ラップ</span>
-              <span class="metric-value" id="summary-last">--</span>
+            <div class="result-row">
+              <span class="result-label">ポイント</span>
+              <span class="result-value" id="summary-points">0</span>
             </div>
           </div>
-          <p class="race-instructions">R キーでレースをリスタート。</p>
+          <p class="race-instructions">R キーでレースをリスタート</p>
         </div>
       </div>
+      <button type="button" id="save-screenshot-btn" class="save-screenshot-btn">📷 記録を画像で保存</button>
     </div>
 
     <!-- Esc ポーズパネル：操作方法 + タイトルに戻るボタン -->
@@ -85,14 +94,19 @@
       <div class="pause-panel-inner">
         <h2>操作方法</h2>
         <ul class="pause-controls-list">
-          <li><span class="key">W / ←クリック</span><span class="action">アクセル</span></li>
+          <li><span class="key">W / 左クリック</span><span class="action">アクセル</span></li>
           <li><span class="key">A・D / ←→</span><span class="action">ステアリング</span></li>
-          <li><span class="key">Space / →クリック</span><span class="action">ブレーキ</span></li>
+          <li><span class="key">Space / 右クリック</span><span class="action">ブレーキ</span></li>
           <li><span class="key">R</span><span class="action">位置リセット</span></li>
           <li><span class="key">M</span><span class="action">ミニマップ切替</span></li>
           <li><span class="key">L</span><span class="action">コース変更</span></li>
           <li><span class="key">B</span><span class="action">音のオン/オフ</span></li>
         </ul>
+        <div class="volume-control">
+          <label for="pause-bgm-volume" class="volume-label">BGM 音量</label>
+          <input type="range" id="pause-bgm-volume" class="volume-slider" min="0" max="100" step="1" value="45" />
+          <span id="pause-bgm-volume-value" class="volume-value">45</span>
+        </div>
         <button type="button" id="pause-return-title" class="pause-return-btn">タイトルに戻る</button>
         <p class="pause-resume-hint">もう一度 Esc を押すとゲームに戻ります</p>
       </div>
