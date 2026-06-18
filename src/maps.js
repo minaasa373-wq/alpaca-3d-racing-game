@@ -4,8 +4,8 @@
 export const maps = [
   {
     id: 'aurora-ring',
-    name: 'Aurora Ring',
-    description: 'Neon-lit night circuit with flowing sweepers and stadium vibes.',
+    name: 'オーロラリング',
+    description: 'ネオンが輝く夜のサーキット。流れるようなコーナーとスタジアムの雰囲気。',
     track: {
       controlPoints: [
         [0, 0, 60],
@@ -56,8 +56,8 @@ export const maps = [
   },
   {
     id: 'sunset-canyon',
-    name: 'Sunset Canyon',
-    description: 'Golden-hour sprint through canyon walls and desert palms.',
+    name: 'サンセットキャニオン',
+    description: '夕暮れの峡谷を駆け抜けるスプリント。岩壁と砂漠のヤシが並ぶコース。',
     track: {
       controlPoints: [
         [0, 0, 40],
