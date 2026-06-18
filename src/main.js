@@ -656,7 +656,7 @@ const driverSettings = {
 
 const gltfLoader = new GLTFLoader();
 gltfLoader.load(
-  '../assets/alpaca_prince.glb',
+  './assets/alpaca_prince.glb',
   (gltf) => {
     const driver = gltf.scene;
     driver.scale.setScalar(driverSettings.scale);
