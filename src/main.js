@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { maps, defaultMapId, getMapById } from './maps.js';
-import { initAudio, updateEngine, playBgm, stopBgm, toggleMute } from './audio.js';
+import { initAudio, updateEngine, playBgm, stopBgm, toggleMute, playOpening, stopOpening } from './audio.js';
 
 // ----- DOM References -----
 let canvas = document.getElementById('game-canvas');
@@ -48,6 +48,13 @@ const mapSelectElements = {
   options: document.getElementById('map-options')
 };
 
+const titleScreen = document.getElementById('title-screen');
+const confirmDialog = {
+  container: document.getElementById('confirm-title'),
+  yes: document.getElementById('confirm-yes'),
+  no: document.getElementById('confirm-no')
+};
+
 let mapConfig = null;
 let trackData = null;
 let trackMesh = null;
@@ -74,7 +81,7 @@ const NPC_COLLISION_RADIUS = 1.1;
 const COLLISION_RESTITUTION = 0.6;
 const POINTS_PER_CHECKPOINT = 150;
 const POINTS_PER_LAP = 500;
-const RACE_TIME_LIMIT = 210; // seconds
+// タイムアタック方式: 0:00 から経過時間を計測し、3周走り切ったら終了
 const RACE_LAP_TARGET = 3;
 
 // ----- Renderer & Scene -----
@@ -734,7 +741,7 @@ const lapTracker = {
 const raceState = {
   points: 0,
   finished: false,
-  timeRemaining: RACE_TIME_LIMIT,
+  elapsedTime: 0,
   checkpointsCleared: 0,
   lapsCompleted: 0
 };
@@ -777,7 +784,7 @@ function computeCompletedCheckpoints() {
 function updateHUD() {
   if (!hudElements.lap) return;
   hudElements.lap.textContent = `ラップ ${lapTracker.lapIndex}`;
-  if (hudElements.time) hudElements.time.textContent = formatTime(raceState.timeRemaining);
+  if (hudElements.time) hudElements.time.textContent = formatTime(raceState.elapsedTime);
   if (hudElements.last) hudElements.last.textContent = formatTime(lapTracker.lastLapTime);
   if (hudElements.best) hudElements.best.textContent = formatTime(lapTracker.bestLapTime);
   if (hudElements.checkpoints) hudElements.checkpoints.textContent = `${computeCompletedCheckpoints()}/${lapTracker.totalCheckpoints}`;
@@ -873,12 +880,12 @@ function awardCheckpointReward(isLapReward) {
 function resetRaceState() {
   raceState.points = 0;
   raceState.finished = false;
-  raceState.timeRemaining = RACE_TIME_LIMIT;
+  raceState.elapsedTime = 0;
   raceState.checkpointsCleared = 0;
   raceState.lapsCompleted = 0;
   if (finishElements.container) finishElements.container.classList.add('hidden');
   if (hudElements.points) hudElements.points.textContent = raceState.points;
-  if (hudElements.time) hudElements.time.textContent = formatTime(raceState.timeRemaining);
+  if (hudElements.time) hudElements.time.textContent = formatTime(raceState.elapsedTime);
 
   for (let i = checkpointEffects.length - 1; i >= 0; i -= 1) {
     const effect = checkpointEffects[i];
@@ -894,12 +901,8 @@ function resetRaceState() {
 function finishRace(reason) {
   if (raceState.finished) return;
   raceState.finished = true;
-  raceState.timeRemaining = Math.max(raceState.timeRemaining, 0);
   if (finishElements.container) finishElements.container.classList.remove('hidden');
-  const lapsText = `${raceState.lapsCompleted}周`;
-  const summary = reason === 'laps'
-    ? `${RACE_LAP_TARGET}周を達成！残りタイムは ${formatTime(raceState.timeRemaining)} でした。`
-    : `${lapsText}でタイムアップしました。`;
+  const summary = `${RACE_LAP_TARGET}周を完走！合計タイムは ${formatTime(raceState.elapsedTime)} でした。`;
   if (finishElements.summary) finishElements.summary.textContent = summary;
   if (finishElements.summaryPoints) finishElements.summaryPoints.textContent = raceState.points;
   if (finishElements.summaryBest) finishElements.summaryBest.textContent = formatTime(lapTracker.bestLapTime);
@@ -908,10 +911,9 @@ function finishRace(reason) {
 
 function updateRaceClock(delta) {
   if (raceState.finished) return;
-  raceState.timeRemaining = Math.max(raceState.timeRemaining - delta, 0);
-  if (hudElements.time) hudElements.time.textContent = formatTime(raceState.timeRemaining);
+  raceState.elapsedTime += delta;
+  if (hudElements.time) hudElements.time.textContent = formatTime(raceState.elapsedTime);
   if (raceState.lapsCompleted >= RACE_LAP_TARGET) finishRace('laps');
-  else if (raceState.timeRemaining <= 0) finishRace('timeout');
 }
 
 function resetLapTracker() {
@@ -955,7 +957,6 @@ const KEY_BINDINGS = {
 };
 // マウス操作の状態
 const mouseState = {
-  steer: 0,        // -1(左) 〜 +1(右) のアナログ値
   accelerating: false // 左クリック長押し中か
 };
 
@@ -965,12 +966,30 @@ function resolveBinding(key) {
 
 window.addEventListener('keydown', (event) => {
   if (event.repeat) return;
-  const mapMenuVisible = mapSelectElements.container && !mapSelectElements.container.classList.contains('hidden');
-  if (mapMenuVisible) {
+
+  // タイトル画面表示中はキー操作を無効化（クリックで進む）
+  const titleVisible = titleScreen && !titleScreen.classList.contains('hidden');
+  if (titleVisible) return;
+
+  // 確認ダイアログ表示中の処理
+  const confirmVisible = confirmDialog.container && !confirmDialog.container.classList.contains('hidden');
+  if (confirmVisible) {
     if (event.key === 'Escape') {
       event.preventDefault();
-      hideMapSelect();
+      hideConfirmDialog(); // Escで「いいえ」と同じ＝閉じる
     }
+    return;
+  }
+
+  // Esc で「タイトルに戻りますか？」ダイアログを表示
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    showConfirmDialog();
+    return;
+  }
+
+  const mapMenuVisible = mapSelectElements.container && !mapSelectElements.container.classList.contains('hidden');
+  if (mapMenuVisible) {
     return;
   }
   if (event.key === 'l' || event.key === 'L') {
@@ -1018,14 +1037,7 @@ window.addEventListener('keyup', (event) => {
 });
 
 // ----- マウス操作 -----
-// マウスの左右位置でステアリング、左クリック長押しで加速
-window.addEventListener('mousemove', (event) => {
-  // 画面中央を0として、左端=-1 / 右端=+1 に正規化
-  const centerX = window.innerWidth / 2;
-  const normalized = (event.clientX - centerX) / centerX;
-  mouseState.steer = clamp(normalized, -1, 1);
-});
-
+// 左クリック長押しで加速（ステアリングはキーボードのみ）
 window.addEventListener('mousedown', (event) => {
   // 左クリック(button 0)で加速
   const mapMenuVisible = mapSelectElements.container && !mapSelectElements.container.classList.contains('hidden');
@@ -1147,13 +1159,9 @@ function updateCar(delta) {
 
   const speedFactor = clamp(Math.abs(carState.speed) / carState.maxSpeed, 0, 1);
   const steeringDelta = 2.8 * (0.35 + 0.65 * speedFactor) * delta;
-  // キーボードのステアリング
+  // ステアリング（キーボードのみ）
   if (inputState.left) carState.heading += steeringDelta;
   if (inputState.right) carState.heading -= steeringDelta;
-  // マウスのステアリング（傾き量に応じて滑らかに曲がる）
-  if (mouseState.steer !== 0) {
-    carState.heading -= mouseState.steer * steeringDelta;
-  }
 
   forwardVector.set(Math.sin(carState.heading), 0, Math.cos(carState.heading));
   carVelocity.copy(forwardVector).multiplyScalar(carState.speed);
@@ -1466,11 +1474,48 @@ function setupMapSelection() {
     button.addEventListener('click', () => selectMap(map.id));
     mapSelectElements.options.appendChild(button);
   });
-
-  showMapSelect();
 }
 
+// ----- タイトル画面 -----
+function showTitleScreen() {
+  if (titleScreen) titleScreen.classList.remove('hidden');
+  if (mapSelectElements.container) mapSelectElements.container.classList.add('hidden');
+  playOpening(); // タイトル曲を1回再生
+}
+
+function startFromTitle() {
+  if (titleScreen) titleScreen.classList.add('hidden');
+  stopOpening(); // クリックしたらタイトル曲を止める
+  showMapSelect(); // コース選択へ
+}
+
+// タイトル画面をクリックでコース選択へ
+if (titleScreen) {
+  titleScreen.addEventListener('click', startFromTitle);
+}
+
+// ----- Esc 確認ダイアログ -----
+function showConfirmDialog() {
+  if (confirmDialog.container) confirmDialog.container.classList.remove('hidden');
+}
+
+function hideConfirmDialog() {
+  if (confirmDialog.container) confirmDialog.container.classList.add('hidden');
+}
+
+function returnToTitle() {
+  hideConfirmDialog();
+  hideMapSelect();
+  if (finishElements.container) finishElements.container.classList.add('hidden');
+  stopBgm();
+  showTitleScreen();
+}
+
+if (confirmDialog.yes) confirmDialog.yes.addEventListener('click', returnToTitle);
+if (confirmDialog.no) confirmDialog.no.addEventListener('click', hideConfirmDialog);
+
 setupMapSelection();
+showTitleScreen();
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;

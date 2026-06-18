@@ -7,8 +7,12 @@
 // 音声は鳴らせない。init() を操作イベントの中で呼ぶこと。
 
 const BGM_URL = './assets/bgm.mp3';
+const OPENING_URL = './assets/opening.mp3';
 const BGM_VOLUME = 0.45;   // BGM の音量 (0〜1)
+const OPENING_VOLUME = 0.6; // タイトル曲の音量 (0〜1)
 const ENGINE_VOLUME = 0.18; // エンジン音の最大音量 (0〜1)
+
+let openingElement = null;
 
 let audioCtx = null;
 let masterGain = null;
@@ -153,4 +157,30 @@ export function toggleMute() {
 
 export function isMuted() {
   return mutedState;
+}
+
+// ----- タイトル曲 (opening.mp3) -----
+// タイトル画面で1回だけ再生する。ループしない。
+// AudioContext を介さず単独の Audio 要素で鳴らすので、init前でも使える。
+export function playOpening() {
+  if (!openingElement) {
+    openingElement = new Audio(OPENING_URL);
+    openingElement.loop = false;
+    openingElement.volume = OPENING_VOLUME;
+    openingElement.addEventListener('error', () => {
+      console.warn(`タイトル曲が見つかりません (${OPENING_URL})。曲なしで続行します。`);
+    });
+  }
+  openingElement.currentTime = 0;
+  const p = openingElement.play();
+  if (p && typeof p.catch === 'function') {
+    p.catch(() => { /* 自動再生ブロック時は無視 */ });
+  }
+}
+
+// タイトル曲を停止する（クリックで本編に進んだとき）
+export function stopOpening() {
+  if (!openingElement) return;
+  openingElement.pause();
+  openingElement.currentTime = 0;
 }
