@@ -1,5 +1,6 @@
 import * as THREE from '../vendor/three.module.js';
 import { maps, defaultMapId, getMapById } from './maps.js';
+import { initAudio, updateEngine, playBgm, stopBgm, toggleMute } from './audio.js';
 
 // ----- DOM References -----
 let canvas = document.getElementById('game-canvas');
@@ -944,6 +945,11 @@ window.addEventListener('keydown', (event) => {
     setMinimapVisibility(!minimapState.enabled);
     return;
   }
+  if (event.key === 'b' || event.key === 'B') {
+    event.preventDefault();
+    toggleMute();
+    return;
+  }
   const binding = resolveBinding(event.key);
   if (binding) {
     event.preventDefault();
@@ -1318,7 +1324,8 @@ function animate() {
     return;
   }
   updateCar(delta);
-  updateLapTimer(delta);
+  updateEngine(carState.speed, carState.maxSpeed); // ← 追加
+    updateLapTimer(delta);
   updateRaceClock(delta);
   updateTraffic(delta);
   handleCollisions();
@@ -1352,6 +1359,8 @@ function selectMap(mapId) {
   loadMap(config);
   hideMapSelect();
   startAnimationLoop();
+  initAudio();  // ユーザー操作（コース選択クリック）の中なので自動再生制限を回避できる
+  playBgm();
 }
 
 function setupMapSelection() {
