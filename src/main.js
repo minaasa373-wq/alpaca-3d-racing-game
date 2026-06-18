@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { maps, defaultMapId, getMapById } from './maps.js';
-import { initAudio, updateEngine, playBgm, stopBgm, toggleMute, playOpening, stopOpening } from './audio.js';
+import { initAudio, updateEngine, playBgm, stopBgm, toggleMute, playOpening, stopOpening, stopEngine } from './audio.js';
 
 // ----- DOM References -----
 let canvas = document.getElementById('game-canvas');
@@ -1512,8 +1512,7 @@ function startFromTitle() {
   // タイトル画像のまま少し余韻を見せてからコース選択へ
   setTimeout(() => {
     if (titleScreen) titleScreen.classList.add('hidden');
-    stopOpening(); // コース選択へ進むとき曲を止める
-    showMapSelect();
+    showMapSelect(); // opening はそのまま鳴らし続ける（1回再生）
   }, 2000); // 2秒の余韻
 }
 
@@ -1536,6 +1535,7 @@ function returnToTitle() {
   hideMapSelect();
   if (finishElements.container) finishElements.container.classList.add('hidden');
   stopBgm();
+  stopEngine(); // エンジン音も止める
   showTitleScreen();
 }
 
