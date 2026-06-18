@@ -88,56 +88,80 @@ html, body {
   pointer-events: none;
 }
 
-.race-finish-panel {
-  max-width: min(420px, 90vw);
-  background: rgba(12, 16, 28, 0.92);
-  padding: 28px 32px;
-  border-radius: 18px;
-  box-shadow:
-    0 22px 40px rgba(0, 0, 0, 0.45),
-    inset 0 0 0 1px rgba(120, 160, 255, 0.2);
-  text-align: center;
-  color: #eef1ff;
+/* リザルト画面：result.jpg の額縁の中に成績を表示する */
+.race-result-frame {
+  position: relative;
+  width: min(1040px, 95vw);
+  aspect-ratio: 1672 / 941;
+  max-height: 94vh;
+  background-image: url('./assets/result.jpg');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.55));
 }
 
-.race-finish-panel h2 {
-  margin: 0 0 12px;
-  font-size: 2rem;
-  letter-spacing: 0.05em;
+/* 額縁の内側（右側の紫の余白）に重ねるコンテンツ領域 */
+.race-result-content {
+  position: absolute;
+  top: 13%;
+  left: 41%;
+  right: 5.5%;
+  bottom: 31%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2%;
+  text-align: center;
+  color: #f3eeff;
+}
+
+.race-result-content h2 {
+  margin: 0;
+  font-size: clamp(1.2rem, 3.2vw, 2.4rem);
+  letter-spacing: 0.06em;
+  color: #ffe9a8;
+  text-shadow: 0 2px 10px rgba(40, 16, 70, 0.8);
 }
 
 .race-summary {
-  margin: 0 0 20px;
-  font-size: 0.95rem;
-  color: rgba(220, 230, 255, 0.8);
+  margin: 0;
+  font-size: clamp(0.7rem, 1.5vw, 1rem);
+  color: rgba(235, 228, 255, 0.92);
+  text-shadow: 0 1px 6px rgba(30, 12, 55, 0.8);
 }
 
 .race-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-  margin-bottom: 22px;
+  gap: clamp(8px, 2vw, 24px);
+  width: 100%;
 }
 
 .race-metrics .metric-label {
   display: block;
-  font-size: 0.75rem;
+  font-size: clamp(0.55rem, 1.1vw, 0.78rem);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(180, 195, 230, 0.8);
-  margin-bottom: 6px;
+  color: rgba(214, 222, 255, 0.85);
+  margin-bottom: 4px;
+  text-shadow: 0 1px 5px rgba(30, 12, 55, 0.8);
 }
 
 .race-metrics .metric-value {
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: #fff59d;
+  font-size: clamp(0.72rem, 2.2vw, 1.6rem);
+  font-weight: 700;
+  color: #ffe066;
+  text-shadow: 0 2px 8px rgba(40, 16, 70, 0.85);
+  white-space: nowrap;
 }
 
 .race-instructions {
   margin: 0;
-  font-size: 0.88rem;
-  color: rgba(220, 230, 255, 0.72);
+  font-size: clamp(0.7rem, 1.4vw, 0.92rem);
+  color: rgba(232, 226, 255, 0.85);
+  text-shadow: 0 1px 6px rgba(30, 12, 55, 0.8);
 }
 
 #hud-minimap {
@@ -298,8 +322,8 @@ html, body {
     width: min(180px, 42vw);
   }
 
-  .race-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .race-result-content .race-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .map-select-panel {
