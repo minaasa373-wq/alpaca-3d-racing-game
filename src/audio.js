@@ -103,6 +103,12 @@ export function updateEngine(speed, maxSpeed) {
   engineGain.gain.setTargetAtTime(targetVol, now, 0.08);
 }
 
+// エンジン音を黙らせる（タイトルに戻るときなど）。音量を0にする。
+export function stopEngine() {
+  if (!engineStarted || !audioCtx || !engineGain) return;
+  engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+}
+
 // --- BGM のセットアップ ---
 function setupBgm() {
   bgmElement = new Audio();
