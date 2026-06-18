@@ -119,7 +119,7 @@ html, body {
   position: relative;
   width: min(1040px, 95vw);
   aspect-ratio: 1672 / 941;
-  max-height: 94vh;
+  max-height: 82vh; /* 下の保存ボタンが見切れないよう余白を残す */
   background-image: url('./assets/result.jpg');
   background-size: contain;
   background-position: center;
@@ -133,7 +133,7 @@ html, body {
   top: 12%;
   left: 37%;
   right: 6%;
-  bottom: 34%;
+  bottom: 36%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -159,12 +159,11 @@ html, body {
 }
 
 .result-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: baseline;
-  justify-content: space-between;
-  gap: clamp(12px, 3vw, 40px);
+  column-gap: clamp(16px, 2.6vw, 36px);
   width: 100%;
-  padding: 0 clamp(4px, 2vw, 28px);
   box-sizing: border-box;
 }
 
@@ -180,10 +179,13 @@ html, body {
 
 .result-label {
   color: rgba(224, 230, 255, 0.92);
+  text-align: right; /* 値との境界に寄せて間隔を詰める */
 }
 
 .result-value {
   color: #ffe066;
+  text-align: left;
+  min-width: 4.5em; /* 値の桁数が変わっても位置が揃うように */
 }
 
 .race-instructions {
