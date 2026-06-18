@@ -57,20 +57,27 @@ export const maps = [
   {
     id: 'sunset-canyon',
     name: 'サンセットキャニオン',
-    description: '夕暮れの峡谷を駆け抜けるスプリント。岩壁と砂漠のヤシが並ぶコース。',
+    description: '夕暮れの峡谷を駆け抜けるテクニカルコース。切り返しと連続コーナーが連なる上級者向け。',
     track: {
       controlPoints: [
-        [0, 0, 40],
-        [70, 0, 30],
-        [110, 0, -20],
-        [70, 0, -90],
-        [0, 0, -120],
-        [-80, 0, -90],
-        [-110, 0, -20],
-        [-90, 0, 50],
-        [-30, 0, 80]
+        [0, 0, 65],
+        [85, 0, 60],
+        [130, 0, 15],
+        [110, 0, -40],
+        [140, 0, -85],
+        [100, 0, -130],
+        [35, 0, -145],
+        [-30, 0, -130],
+        [-60, 0, -75],
+        [-120, 0, -95],
+        [-150, 0, -40],
+        [-110, 0, 5],
+        [-140, 0, 55],
+        [-95, 0, 75],
+        [-75, 0, 100],
+        [-30, 0, 88]
       ],
-      tubularSegments: 640,
+      tubularSegments: 820,
       radius: 13.5,
       verticalScale: 0.07,
       edgeColor: 0xffa040,
@@ -90,13 +97,14 @@ export const maps = [
       guardRailOffset: 1.8,
       lights: { count: 18, offset: 2.1 },
       billboards: [
-        { position: [60, 0, 20], rotation: Math.PI / 3, color: 0xff7043 },
-        { position: [-110, 0, -10], rotation: -Math.PI / 2.4, color: 0xffc400 },
-        { position: [30, 0, -110], rotation: Math.PI / 1.8, color: 0x26a69a }
+        { position: [105, 0, 72], rotation: -Math.PI / 2.5, color: 0xff7043 },
+        { position: [56, 0, -163], rotation: Math.PI / 2.5, color: 0xffc400 },
+        { position: [-149, 0, -7], rotation: Math.PI / 3, color: 0x26a69a }
       ],
       grandstands: [
-        { progress: 0.12, side: 1 },
-        { progress: 0.48, side: -1 }
+        { progress: 0.05, side: 1 },
+        { progress: 0.42, side: -1 },
+        { progress: 0.70, side: 1 }
       ]
     },
     trafficPresets: [
