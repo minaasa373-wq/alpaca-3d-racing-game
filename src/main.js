@@ -647,11 +647,11 @@ scene.add(car);
 
 // ----- あるぱかプリンスをプレイヤーの車に乗せる -----
 const driverSettings = {
-  scale: 1.6,        // 大きく（1.0 → 1.6）。まだ小さければ 2.0 などに
-  posX: 0,           // 前後位置。車体の中央へ（-0.6 → 0）
-  posY: 0.5,         // 高さ。今のままでいったん様子見
-  posZ: 0,           // 左右位置。中央のまま
-  rotationY: 0       // 向き。後ろ向き → 前向きに（Math.PI → 0）
+  scale: 1.6,        // 大きさ。大きすぎ/小さすぎたらここを調整
+  posX: 0,           // 前後位置（車体の進行方向まわり）
+  posY: 0.5,         // 高さ。下げると車体に埋まる、上げると飛び出す
+  posZ: 0,           // 左右位置
+  rotationY: 0       // 向き。後ろを向いてたら Math.PI などに変更
 };
 
 const gltfLoader = new GLTFLoader();
@@ -776,7 +776,7 @@ function computeCompletedCheckpoints() {
 
 function updateHUD() {
   if (!hudElements.lap) return;
-  hudElements.lap.textContent = hudElements.lap.textContent = `ラップ ${lapTracker.lapIndex}`;
+  hudElements.lap.textContent = `ラップ ${lapTracker.lapIndex}`;
   if (hudElements.time) hudElements.time.textContent = formatTime(raceState.timeRemaining);
   if (hudElements.last) hudElements.last.textContent = formatTime(lapTracker.lastLapTime);
   if (hudElements.best) hudElements.best.textContent = formatTime(lapTracker.bestLapTime);
@@ -997,15 +997,12 @@ window.addEventListener('keydown', (event) => {
     event.preventDefault();
     placeCarAtStart();
   }
-});
-if (event.code === 'Space') {
+  if (event.code === 'Space') {
     event.preventDefault();
     inputState.backward = true; // スペースでブレーキ／後退
   }
-if (event.code === 'Space') {
-    event.preventDefault();
-    inputState.backward = false;
-  }
+});
+
 window.addEventListener('keyup', (event) => {
   const mapMenuVisible = mapSelectElements.container && !mapSelectElements.container.classList.contains('hidden');
   if (mapMenuVisible) return;
@@ -1013,6 +1010,10 @@ window.addEventListener('keyup', (event) => {
   if (binding) {
     event.preventDefault();
     inputState[binding] = false;
+  }
+  if (event.code === 'Space') {
+    event.preventDefault();
+    inputState.backward = false;
   }
 });
 
@@ -1136,7 +1137,7 @@ function updateCar(delta) {
     return;
   }
 
-// 加速: キーボード前進 または マウス左クリック長押し
+  // 加速: キーボード前進 または マウス左クリック長押し
   const accelerating = inputState.forward || mouseState.accelerating;
   if (accelerating) carState.speed += 55 * delta;
   else if (inputState.backward) carState.speed -= 65 * delta;
@@ -1410,8 +1411,8 @@ function animate() {
     return;
   }
   updateCar(delta);
-  updateEngine(carState.speed, carState.maxSpeed); // ← 追加
-    updateLapTimer(delta);
+  updateEngine(carState.speed, carState.maxSpeed); // エンジン音を速度に連動
+  updateLapTimer(delta);
   updateRaceClock(delta);
   updateTraffic(delta);
   handleCollisions();
