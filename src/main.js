@@ -556,7 +556,7 @@ function loadMap(config) {
   mapLoaded = true;
 }
 // ----- Car Creation -----
-function createCar({ bodyColor = 0xe53935, accentColor = 0x111111, glassColor = 0xb3e5fc } = {}) {
+function createCar({ bodyColor = 0xe53935, accentColor = 0x111111, glassColor = 0xb3e5fc, trimColor = null } = {}) {
   const car = new THREE.Group();
   const shell = new THREE.Group();
   shell.rotation.y = -Math.PI / 2;
@@ -565,6 +565,10 @@ function createCar({ bodyColor = 0xe53935, accentColor = 0x111111, glassColor = 
   const primaryMat = new THREE.MeshStandardMaterial({ color: bodyColor, metalness: 0.55, roughness: 0.32 });
   const secondaryMat = new THREE.MeshStandardMaterial({ color: accentColor, metalness: 0.3, roughness: 0.55 });
   const glassMat = new THREE.MeshStandardMaterial({ color: glassColor, metalness: 0.85, roughness: 0.06, transparent: true, opacity: 0.68 });
+  // 金トリム（trimColor 未指定なら accentColor で代用＝従来のNPC等はそのまま）
+  const trimMat = trimColor !== null
+    ? new THREE.MeshStandardMaterial({ color: trimColor, metalness: 0.95, roughness: 0.2, emissive: 0x3a2c08, emissiveIntensity: 0.25 })
+    : secondaryMat;
 
   const chassis = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.9, 1.55), primaryMat);
   chassis.position.set(-0.3, 0.2, 0);
@@ -583,7 +587,7 @@ function createCar({ bodyColor = 0xe53935, accentColor = 0x111111, glassColor = 
   noseCone.castShadow = true;
   shell.add(noseCone);
 
-  const frontWing = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.18, 2.6), secondaryMat);
+  const frontWing = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.18, 2.6), trimMat);
   frontWing.position.set(3, -0.22, 0);
   frontWing.castShadow = true;
   shell.add(frontWing);
@@ -613,7 +617,7 @@ function createCar({ bodyColor = 0xe53935, accentColor = 0x111111, glassColor = 
   rearWingSupport.position.set(-2.6, 0.55, 0);
   shell.add(rearWingSupport);
 
-  const rearWing = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.1, 2.3), secondaryMat);
+  const rearWing = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.1, 2.3), trimMat);
   rearWing.position.set(-3.1, 0.75, 0);
   rearWing.castShadow = true;
   shell.add(rearWing);
@@ -627,7 +631,9 @@ function createCar({ bodyColor = 0xe53935, accentColor = 0x111111, glassColor = 
   const tyreGeom = new THREE.CylinderGeometry(0.52, 0.52, 0.32, 22);
   tyreGeom.rotateZ(Math.PI / 2);
 
-  const rimMat = new THREE.MeshStandardMaterial({ color: 0xdcdcdc, metalness: 0.7, roughness: 0.25 });
+  const rimMat = trimColor !== null
+    ? new THREE.MeshStandardMaterial({ color: trimColor, metalness: 0.9, roughness: 0.25 })
+    : new THREE.MeshStandardMaterial({ color: 0xdcdcdc, metalness: 0.7, roughness: 0.25 });
   const rimGeom = new THREE.CylinderGeometry(0.26, 0.26, 0.36, 18);
   rimGeom.rotateZ(Math.PI / 2);
 
@@ -649,7 +655,13 @@ function createCar({ bodyColor = 0xe53935, accentColor = 0x111111, glassColor = 
   return car;
 }
 
-const car = createCar();
+// プレイヤーの車：タイトル画像に合わせた白×紫×金カラー
+const car = createCar({
+  bodyColor: 0xf5f0ff,   // 白（わずかに紫がかった白）
+  accentColor: 0x7e57c2, // 紫（王子様カラー）
+  trimColor: 0xd4af37,   // 金（ウイング・ホイールのライン）
+  glassColor: 0xd1c4e9   // コックピットを薄紫に
+});
 scene.add(car);
 
 // ----- あるぱかプリンスをプレイヤーの車に乗せる -----
@@ -1477,19 +1489,35 @@ function setupMapSelection() {
 }
 
 // ----- タイトル画面 -----
+let titleClicked = false; // 多重クリック防止
+
 function showTitleScreen() {
-  if (titleScreen) titleScreen.classList.remove('hidden');
+  titleClicked = false;
+  if (titleScreen) {
+    titleScreen.classList.remove('hidden');
+    titleScreen.classList.remove('starting');
+  }
   if (mapSelectElements.container) mapSelectElements.container.classList.add('hidden');
-  playOpening(); // タイトル曲を1回再生
+  // ブラウザの自動再生制限により、ここでは鳴らせない。
+  // 最初のクリック（startFromTitle）で opening を再生する。
 }
 
 function startFromTitle() {
-  if (titleScreen) titleScreen.classList.add('hidden');
-  stopOpening(); // クリックしたらタイトル曲を止める
-  showMapSelect(); // コース選択へ
+  if (titleClicked) return; // 2回目以降のクリックは無視
+  titleClicked = true;
+
+  playOpening(); // 最初のクリックなので確実に鳴る
+  if (titleScreen) titleScreen.classList.add('starting'); // 「クリックしてスタート」を消す演出
+
+  // タイトル画像のまま少し余韻を見せてからコース選択へ
+  setTimeout(() => {
+    if (titleScreen) titleScreen.classList.add('hidden');
+    stopOpening(); // コース選択へ進むとき曲を止める
+    showMapSelect();
+  }, 2000); // 2秒の余韻
 }
 
-// タイトル画面をクリックでコース選択へ
+// タイトル画面をクリックで開始
 if (titleScreen) {
   titleScreen.addEventListener('click', startFromTitle);
 }
