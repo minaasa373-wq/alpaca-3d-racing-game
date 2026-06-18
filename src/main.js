@@ -37,6 +37,7 @@ const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
 
 const finishElements = {
   container: document.getElementById('race-finish'),
+  summaryCourse: document.getElementById('summary-course'),
   summaryTotal: document.getElementById('summary-total'),
   summaryBest: document.getElementById('summary-best'),
   summaryPoints: document.getElementById('summary-points'),
@@ -937,6 +938,7 @@ function finishRace(reason) {
   if (raceState.finished) return;
   raceState.finished = true;
   if (finishElements.container) finishElements.container.classList.remove('hidden');
+  if (finishElements.summaryCourse) finishElements.summaryCourse.textContent = mapConfig ? mapConfig.name : '--';
   if (finishElements.summaryTotal) finishElements.summaryTotal.textContent = formatTime(raceState.elapsedTime);
   if (finishElements.summaryBest) finishElements.summaryBest.textContent = formatTime(lapTracker.bestLapTime);
   if (finishElements.summaryPoints) finishElements.summaryPoints.textContent = raceState.points;
@@ -998,7 +1000,16 @@ function saveResultScreenshot() {
   const titleSize = frameW * 0.052;
   ctx.font = `800 ${titleSize}px system-ui, sans-serif`;
   ctx.fillStyle = '#ffe9a8';
-  ctx.fillText('レース終了', centerX, cTop + contentH * 0.12);
+  ctx.fillText('レース終了', centerX, cTop + contentH * 0.1);
+
+  // 走ったコース名
+  const courseName = finishElements.summaryCourse ? finishElements.summaryCourse.textContent : '';
+  if (courseName && courseName !== '--') {
+    const courseSize = frameW * 0.028;
+    ctx.font = `700 ${courseSize}px system-ui, sans-serif`;
+    ctx.fillStyle = '#e8c9ff';
+    ctx.fillText(courseName, centerX, cTop + contentH * 0.24);
+  }
 
   // 成績3項目（ラベルと値を同サイズで横並び・縦に均等）
   const rows = [
@@ -1008,8 +1019,8 @@ function saveResultScreenshot() {
   ];
   const rowSize = frameW * 0.038;
   ctx.font = `700 ${rowSize}px system-ui, sans-serif`;
-  const listTop = cTop + contentH * 0.34;
-  const listGap = contentH * 0.2;
+  const listTop = cTop + contentH * 0.42;
+  const listGap = contentH * 0.19;
   // 中央を挟んでラベル(右寄せ)と値(左寄せ)を配置し、間隔を詰める
   const gapHalf = contentW * 0.04;
   const labelX = centerX - gapHalf;
