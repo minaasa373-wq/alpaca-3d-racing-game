@@ -19,7 +19,7 @@ export const maps = [
         [-40, 0, 90]
       ],
       tubularSegments: 700,
-      radius: 8,
+      radius: 13,
       verticalScale: 0.08,
       edgeColor: 0xffd54f,
       material: {
@@ -71,7 +71,7 @@ export const maps = [
         [-30, 0, 80]
       ],
       tubularSegments: 640,
-      radius: 8.5,
+      radius: 13.5,
       verticalScale: 0.07,
       edgeColor: 0xffa040,
       material: {

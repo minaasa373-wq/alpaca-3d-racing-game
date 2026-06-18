@@ -49,10 +49,9 @@ const mapSelectElements = {
 };
 
 const titleScreen = document.getElementById('title-screen');
-const confirmDialog = {
-  container: document.getElementById('confirm-title'),
-  yes: document.getElementById('confirm-yes'),
-  no: document.getElementById('confirm-no')
+const pausePanel = {
+  container: document.getElementById('pause-panel'),
+  returnButton: document.getElementById('pause-return-title')
 };
 
 let mapConfig = null;
@@ -66,6 +65,7 @@ let ambientMist = null;
 let mapLoaded = false;
 let animationStarted = false;
 let isPlaying = false; // ゲームプレイ中か（タイトル/コース選択中は false）
+let isPaused = false;  // Escパネル表示中（プレイ中の一時停止）
 
 const billboardGroups = [];
 const grandstandGroups = [];
@@ -74,7 +74,7 @@ let checkpointMarkers = [];
 const trackNormal = new THREE.Vector3();
 
 // ----- Constants -----
-const TRACK_HALF_WIDTH = 8.2;
+const TRACK_HALF_WIDTH = 13; // コース幅。広めにしてコースアウトを軽減
 const CHECKPOINT_COUNT = 16;
 const CAR_RIDE_HEIGHT = 0.45;
 const CAR_COLLISION_RADIUS = 1.2;
@@ -737,9 +737,9 @@ const carState = {
   speed: 0,
   heading: 0,
   maxSpeed: 120,
-  maxReverseSpeed: -30,
   progress: 0
 };
+const MIN_SPEED = 0; // 後退なし。速度の下限は0
 
 const lapTracker = {
   lapIndex: 1,
@@ -761,8 +761,8 @@ const raceState = {
 
 const checkpointEffects = [];
 const rewardRingGeometry = new THREE.TorusGeometry(1.05, 0.09, 14, 36);
-const cameraBaseOffset = new THREE.Vector3(0, 6, -12);
-const cameraLookOffset = new THREE.Vector3(0, 1.2, 0);
+const cameraBaseOffset = new THREE.Vector3(0, 2.6, -5.5); // 車体に寄せたTPS風チェイスカム
+const cameraLookOffset = new THREE.Vector3(0, 1.0, 0);    // 注視点（垂直方向のみ。車の向きに依存しないため水平成分は入れない）
 const cameraTemp = new THREE.Vector3();
 const cameraOffsetTemp = new THREE.Vector3();
 const tempVector = new THREE.Vector3();
@@ -963,10 +963,11 @@ function placeCarAtStart() {
 
 placeCarAtStart();
 // ----- Input Handling -----
-const inputState = { forward: false, backward: false, left: false, right: false };
+// 新操作スキーム: W/左クリック=アクセル、A・D/←→=ステアリング、スペース・右クリック=ブレーキ（後退なし）
+const inputState = { forward: false, brake: false, left: false, right: false };
 const KEY_BINDINGS = {
-  ArrowUp: 'forward', ArrowDown: 'backward', ArrowLeft: 'left', ArrowRight: 'right',
-  w: 'forward', s: 'backward', a: 'left', d: 'right'
+  ArrowUp: 'forward', ArrowDown: 'brake', ArrowLeft: 'left', ArrowRight: 'right',
+  w: 'forward', s: 'brake', a: 'left', d: 'right'
 };
 // マウス操作の状態
 const mouseState = {
@@ -984,22 +985,16 @@ window.addEventListener('keydown', (event) => {
   const titleVisible = titleScreen && !titleScreen.classList.contains('hidden');
   if (titleVisible) return;
 
-  // 確認ダイアログ表示中の処理
-  const confirmVisible = confirmDialog.container && !confirmDialog.container.classList.contains('hidden');
-  if (confirmVisible) {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      hideConfirmDialog(); // Escで「いいえ」と同じ＝閉じる
-    }
+  // Esc: プレイ中ならポーズパネル（操作方法＋タイトルに戻る）をトグル
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    if (!isPlaying) return; // コース選択中などは無効
+    if (isPaused) hidePausePanel();
+    else showPausePanel();
     return;
   }
 
-  // Esc で「タイトルに戻りますか？」ダイアログを表示
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    showConfirmDialog();
-    return;
-  }
+  if (isPaused) return; // ポーズ中は他の操作を受け付けない
 
   const mapMenuVisible = mapSelectElements.container && !mapSelectElements.container.classList.contains('hidden');
   if (mapMenuVisible) {
@@ -1031,7 +1026,7 @@ window.addEventListener('keydown', (event) => {
   }
   if (event.code === 'Space') {
     event.preventDefault();
-    inputState.backward = true; // スペースでブレーキ／後退
+    inputState.brake = true; // スペースでブレーキ
   }
 });
 
@@ -1045,19 +1040,21 @@ window.addEventListener('keyup', (event) => {
   }
   if (event.code === 'Space') {
     event.preventDefault();
-    inputState.backward = false;
+    inputState.brake = false;
   }
 });
 
 // ----- マウス操作 -----
-// 左クリック長押しで加速（ステアリングはキーボードのみ）
+// 左クリック長押しでアクセル、右クリック長押しでブレーキ（ステアリングはキーボードのみ）
 window.addEventListener('mousedown', (event) => {
-  // 左クリック(button 0)で加速
-  if (!isPlaying) return; // プレイ中以外（タイトル/コース選択）は無効
+  if (!isPlaying || isPaused) return; // プレイ中以外（タイトル/コース選択/ポーズ中）は無効
   const mapMenuVisible = mapSelectElements.container && !mapSelectElements.container.classList.contains('hidden');
   if (mapMenuVisible) return; // メニュー表示中は無効
   if (event.button === 0) {
     mouseState.accelerating = true;
+  }
+  if (event.button === 2) {
+    inputState.brake = true;
   }
 });
 
@@ -1065,11 +1062,15 @@ window.addEventListener('mouseup', (event) => {
   if (event.button === 0) {
     mouseState.accelerating = false;
   }
+  if (event.button === 2) {
+    inputState.brake = false;
+  }
 });
 
-// 画面外にマウスが出たら加速解除（押しっぱなし暴走防止）
+// 画面外にマウスが出たら加速・ブレーキ解除（押しっぱなし暴走防止）
 window.addEventListener('mouseleave', () => {
   mouseState.accelerating = false;
+  inputState.brake = false;
 });
 
 // 右クリックメニューを抑制（誤操作防止）
@@ -1165,11 +1166,18 @@ function updateCar(delta) {
 
   // 加速: キーボード前進 または マウス左クリック長押し
   const accelerating = inputState.forward || mouseState.accelerating;
-  if (accelerating) carState.speed += 55 * delta;
-  else if (inputState.backward) carState.speed -= 65 * delta;
-  else carState.speed = smoothApproach(carState.speed, 0, 12, delta);
+  // ブレーキ: スペース／右クリック／キーボード下入力（同時押し時はブレーキを優先）
+  const braking = inputState.brake;
 
-  carState.speed = clamp(carState.speed, carState.maxReverseSpeed, carState.maxSpeed);
+  if (braking) {
+    carState.speed -= 90 * delta; // ブレーキはしっかり効く
+  } else if (accelerating) {
+    carState.speed += 55 * delta;
+  } else {
+    carState.speed = smoothApproach(carState.speed, 0, 0.6, delta); // 惰性でゆっくり減速
+  }
+
+  carState.speed = clamp(carState.speed, MIN_SPEED, carState.maxSpeed); // 後退なし。0が下限
 
   const speedFactor = clamp(Math.abs(carState.speed) / carState.maxSpeed, 0, 1);
   const steeringDelta = 2.8 * (0.35 + 0.65 * speedFactor) * delta;
@@ -1199,7 +1207,7 @@ function syncCarStateFromVelocity() {
   carState.heading = Math.atan2(carVelocity.x, carVelocity.z);
   forwardVector.set(Math.sin(carState.heading), 0, Math.cos(carState.heading));
   const directionSign = Math.sign(carVelocity.dot(forwardVector)) || 1;
-  carState.speed = clamp(speedMagnitude * directionSign, carState.maxReverseSpeed, carState.maxSpeed);
+  carState.speed = clamp(speedMagnitude * directionSign, MIN_SPEED, carState.maxSpeed);
   car.rotation.y = carState.heading;
   carVelocity.copy(forwardVector).multiplyScalar(carState.speed);
 }
@@ -1432,8 +1440,8 @@ function animate() {
     renderer.render(scene, camera);
     return;
   }
-  // タイトル/コース選択中はゲームを更新せず、エンジン音も止める
-  if (!isPlaying) {
+  // タイトル/コース選択中・ポーズ中はゲームを更新せず、エンジン音も止める
+  if (!isPlaying || isPaused) {
     stopEngine();
     renderer.render(scene, camera);
     return;
@@ -1449,7 +1457,7 @@ function animate() {
   if (ambientMist) ambientMist.rotation.y += delta * 0.02;
   const pivot = cameraTemp.copy(car.position).add(cameraLookOffset);
   const offset = cameraOffsetTemp.copy(cameraBaseOffset).applyAxisAngle(new THREE.Vector3(0, 1, 0), carState.heading);
-  camera.position.lerp(pivot.clone().add(offset), 1 - Math.exp(-4 * delta));
+  camera.position.lerp(pivot.clone().add(offset), 1 - Math.exp(-6 * delta));
   camera.lookAt(pivot);
   renderer.render(scene, camera);
 }
@@ -1460,6 +1468,13 @@ function hideMapSelect() {
 
 function showMapSelect() {
   if (mapSelectElements.container) mapSelectElements.container.classList.remove('hidden');
+  // コース選択中はゲームを止める（裏で走り続けない・エンジン音も止まる）
+  isPlaying = false;
+  inputState.forward = false;
+  inputState.brake = false;
+  inputState.left = false;
+  inputState.right = false;
+  mouseState.accelerating = false;
 }
 
 function startAnimationLoop() {
@@ -1502,6 +1517,7 @@ let titleClicked = false; // 多重クリック防止
 
 function showTitleScreen() {
   titleClicked = false;
+  isPaused = false;
   if (titleScreen) {
     titleScreen.classList.remove('hidden');
     titleScreen.classList.remove('starting');
@@ -1530,17 +1546,25 @@ if (titleScreen) {
   titleScreen.addEventListener('click', startFromTitle);
 }
 
-// ----- Esc 確認ダイアログ -----
-function showConfirmDialog() {
-  if (confirmDialog.container) confirmDialog.container.classList.remove('hidden');
+// ----- Esc ポーズパネル（操作方法＋タイトルに戻る）-----
+function showPausePanel() {
+  if (pausePanel.container) pausePanel.container.classList.remove('hidden');
+  isPaused = true;
+  // 操作中のキー/マウス入力をリセット（パネルを開いた瞬間に走り続けないように）
+  inputState.forward = false;
+  inputState.brake = false;
+  inputState.left = false;
+  inputState.right = false;
+  mouseState.accelerating = false;
 }
 
-function hideConfirmDialog() {
-  if (confirmDialog.container) confirmDialog.container.classList.add('hidden');
+function hidePausePanel() {
+  if (pausePanel.container) pausePanel.container.classList.add('hidden');
+  isPaused = false;
 }
 
 function returnToTitle() {
-  hideConfirmDialog();
+  hidePausePanel();
   hideMapSelect();
   if (finishElements.container) finishElements.container.classList.add('hidden');
   isPlaying = false; // ゲーム停止（animateループ内でエンジン音も止まる）
@@ -1549,8 +1573,7 @@ function returnToTitle() {
   showTitleScreen();
 }
 
-if (confirmDialog.yes) confirmDialog.yes.addEventListener('click', returnToTitle);
-if (confirmDialog.no) confirmDialog.no.addEventListener('click', hideConfirmDialog);
+if (pausePanel.returnButton) pausePanel.returnButton.addEventListener('click', returnToTitle);
 
 setupMapSelection();
 showTitleScreen();
