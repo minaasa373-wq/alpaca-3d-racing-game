@@ -98,7 +98,7 @@ const trackNormal = new THREE.Vector3();
 // ----- Constants -----
 const TRACK_HALF_WIDTH = 13; // コース幅。広めにしてコースアウトを軽減
 const CHECKPOINT_COUNT = 16;
-const CAR_RIDE_HEIGHT = 0.95; // 車体が地面にめり込まない高さ（タイヤ下端が接地）
+const CAR_RIDE_HEIGHT = 1.45; // 車高。浮きすぎなら下げ(例1.25)、まだ沈むなら上げる。タイヤ最下点は原点-0.57
 const CAR_COLLISION_RADIUS = 1.2;
 const NPC_COLLISION_RADIUS = 1.1;
 const COLLISION_RESTITUTION = 0.6;
@@ -1010,15 +1010,17 @@ function saveResultScreenshot() {
   ctx.font = `700 ${rowSize}px system-ui, sans-serif`;
   const listTop = cTop + contentH * 0.34;
   const listGap = contentH * 0.2;
-  const labelX = cx + contentW * 0.06;
-  const valueX = cRight - contentW * 0.06;
+  // 中央を挟んでラベル(右寄せ)と値(左寄せ)を配置し、間隔を詰める
+  const gapHalf = contentW * 0.04;
+  const labelX = centerX - gapHalf;
+  const valueX = centerX + gapHalf;
 
   rows.forEach((row, i) => {
     const y = listTop + listGap * i;
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'right';
     ctx.fillStyle = 'rgba(224, 230, 255, 0.92)';
     ctx.fillText(row[0], labelX, y);
-    ctx.textAlign = 'right';
+    ctx.textAlign = 'left';
     ctx.fillStyle = '#ffe066';
     ctx.fillText(row[1], valueX, y);
   });
@@ -1148,7 +1150,11 @@ window.addEventListener('keydown', (event) => {
   }
   if (event.key === 'r' || event.key === 'R') {
     event.preventDefault();
-    placeCarAtStart();
+    if (raceState.finished) {
+      restartWithCountdown(); // リザルト画面からのリスタートはカウントダウンを出す
+    } else {
+      placeCarAtStart(); // 走行中はその場で即リセット（コースアウトの立て直し用）
+    }
   }
   if (event.code === 'Space') {
     event.preventDefault();
@@ -1627,6 +1633,12 @@ function selectMap(mapId) {
   startCountdown(); // 3-2-1-START のあとにゲーム開始＆BGM
 }
 
+// リザルト画面からのリスタート：車をスタートに戻してカウントダウンし直す
+function restartWithCountdown() {
+  placeCarAtStart(); // 車をスタート位置へ＋レース状態リセット（リザルト画面も隠れる）
+  startCountdown();  // 3-2-1-START のあとにゲーム再開＆BGM
+}
+
 // 3-2-1-START カウントダウン。終了時に onComplete を呼ぶ。
 function startCountdown() {
   clearCountdownTimers();
@@ -1644,6 +1656,7 @@ function startCountdown() {
   snapCameraBehindCar(); // カウントダウン中、車の背後にカメラを置いておく
 
   stopOpening(); // タイトル曲が鳴っていれば止める（カウントダウン音と重ねない）
+  stopBgm();     // リスタート時などBGMが鳴っていれば一旦止める（STARTで鳴らし直す）
   playCountdown(); // 321START.mp3 を再生（音と表示を合わせる）
 
   const steps = ['3', '2', '1', 'START'];
