@@ -127,38 +127,50 @@ html, body {
   filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.55));
 }
 
-/* 額縁の内側（紫の表示領域）に重ねるコンテンツ領域 */
-.race-result-content {
-  position: absolute;
-  top: 12%;
-  left: 37%;
-  right: 6%;
-  bottom: 36%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  text-align: center;
-  color: #f3eeff;
-}
-
+/* タイトルとコース名は枠の飾りのセンター（宝石・クラウンと同じ65%）に揃える */
 .race-result-title {
+  position: absolute;
+  top: 14%;
+  left: 65%;
+  transform: translateX(-50%);
   margin: 0;
   font-size: clamp(1.6rem, 3.6vw, 3rem);
   font-weight: 800;
   letter-spacing: 0.08em;
   color: #ffe9a8;
   text-shadow: 0 2px 12px rgba(40, 16, 70, 0.85);
+  white-space: nowrap;
 }
 
-/* 走ったコース名 */
+/* 走ったコース名（タイトルと同じく飾りのセンターに揃える） */
 .race-result-course {
+  position: absolute;
+  top: 26%;
+  left: 65%;
+  transform: translateX(-50%);
   margin: 0;
   font-size: clamp(0.85rem, 1.9vw, 1.35rem);
   font-weight: 700;
   letter-spacing: 0.04em;
   color: #e8c9ff;
   text-shadow: 0 2px 8px rgba(40, 16, 70, 0.85);
+  white-space: nowrap;
+}
+
+/* 額縁の内側（紫の表示領域）に重ねるコンテンツ領域（成績3項目＋案内） */
+.race-result-content {
+  position: absolute;
+  top: 36%;
+  left: 37%;
+  right: 6%;
+  bottom: 30%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: clamp(8px, 2vh, 22px);
+  text-align: center;
+  color: #f3eeff;
 }
 
 .race-result-list {
