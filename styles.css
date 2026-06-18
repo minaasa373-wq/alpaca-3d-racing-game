@@ -151,6 +151,16 @@ html, body {
   text-shadow: 0 2px 12px rgba(40, 16, 70, 0.85);
 }
 
+/* 走ったコース名 */
+.race-result-course {
+  margin: 0;
+  font-size: clamp(0.85rem, 1.9vw, 1.35rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #e8c9ff;
+  text-shadow: 0 2px 8px rgba(40, 16, 70, 0.85);
+}
+
 .race-result-list {
   display: flex;
   flex-direction: column;
@@ -160,7 +170,8 @@ html, body {
 
 .result-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto auto; /* ラベル列・値列とも中身ぶん。塊を中央寄せ */
+  justify-content: center;
   align-items: baseline;
   column-gap: clamp(16px, 2.6vw, 36px);
   width: 100%;
