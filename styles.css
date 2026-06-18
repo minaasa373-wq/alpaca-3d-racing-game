@@ -329,6 +329,17 @@ html, body {
   pointer-events: none;
 }
 
+/* クリック直後：スタートヒントを消して開始演出 */
+.title-screen.starting {
+  cursor: default;
+  pointer-events: none;
+}
+
+.title-screen.starting .title-start-hint {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
 .title-start-hint {
   margin-bottom: 9vh;
   padding: 14px 36px;
