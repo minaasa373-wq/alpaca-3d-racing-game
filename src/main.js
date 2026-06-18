@@ -742,7 +742,7 @@ function computeCompletedCheckpoints() {
 
 function updateHUD() {
   if (!hudElements.lap) return;
-  hudElements.lap.textContent = `Lap ${lapTracker.lapIndex}`;
+  hudElements.lap.textContent = hudElements.lap.textContent = `ラップ ${lapTracker.lapIndex}`;
   if (hudElements.time) hudElements.time.textContent = formatTime(raceState.timeRemaining);
   if (hudElements.last) hudElements.last.textContent = formatTime(lapTracker.lastLapTime);
   if (hudElements.best) hudElements.best.textContent = formatTime(lapTracker.bestLapTime);
@@ -862,10 +862,10 @@ function finishRace(reason) {
   raceState.finished = true;
   raceState.timeRemaining = Math.max(raceState.timeRemaining, 0);
   if (finishElements.container) finishElements.container.classList.remove('hidden');
-  const lapsText = raceState.lapsCompleted === 1 ? '1 lap' : `${raceState.lapsCompleted} laps`;
+  const lapsText = `${raceState.lapsCompleted}周`;
   const summary = reason === 'laps'
-    ? `You crossed the ${RACE_LAP_TARGET}-lap target with ${formatTime(raceState.timeRemaining)} left on the clock.`
-    : `Time expired after ${lapsText}.`;
+    ? `${RACE_LAP_TARGET}周を達成！残りタイムは ${formatTime(raceState.timeRemaining)} でした。`
+    : `${lapsText}でタイムアップしました。`;
   if (finishElements.summary) finishElements.summary.textContent = summary;
   if (finishElements.summaryPoints) finishElements.summaryPoints.textContent = raceState.points;
   if (finishElements.summaryBest) finishElements.summaryBest.textContent = formatTime(lapTracker.bestLapTime);
