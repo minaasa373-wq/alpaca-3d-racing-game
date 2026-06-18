@@ -645,6 +645,38 @@ function createCar({ bodyColor = 0xe53935, accentColor = 0x111111, glassColor = 
 const car = createCar();
 scene.add(car);
 
+// ----- あるぱかプリンスをプレイヤーの車に乗せる -----
+const driverSettings = {
+  scale: 1.0,        // 大きさ。大きすぎ/小さすぎたらここを調整
+  posX: -0.6,        // 前後位置（車体の進行方向まわり）
+  posY: 0.5,         // 高さ。下げると車体に埋まる、上げると飛び出す
+  posZ: 0,           // 左右位置
+  rotationY: Math.PI // 向き。後ろを向いてたら 0 や Math.PI/2 などに変更
+};
+
+const gltfLoader = new GLTFLoader();
+gltfLoader.load(
+  '../assets/alpaca_prince.glb',
+  (gltf) => {
+    const driver = gltf.scene;
+    driver.scale.setScalar(driverSettings.scale);
+    driver.position.set(driverSettings.posX, driverSettings.posY, driverSettings.posZ);
+    driver.rotation.y = driverSettings.rotationY;
+    driver.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    car.add(driver); // 車の子にするので、車が動くと一緒に動く
+    console.log('あるぱかプリンス読み込み完了');
+  },
+  undefined,
+  (error) => {
+    console.warn('あるぱかプリンスの読み込みに失敗しました:', error);
+  }
+);
+
 const trafficCars = [];
 function spawnTrafficCars(config) {
   trafficCars.forEach((npc) => scene.remove(npc.mesh));
