@@ -8,9 +8,14 @@
 
 const BGM_URL = './assets/bgm.mp3';
 const OPENING_URL = './assets/opening.mp3';
-const BGM_VOLUME = 0.45;   // BGM の音量 (0〜1)
+const COUNTDOWN_URL = './assets/321START.mp3';
+const BGM_VOLUME = 0.45;   // BGM の初期音量 (0〜1)
 const OPENING_VOLUME = 0.6; // タイトル曲の音量 (0〜1)
+const COUNTDOWN_VOLUME = 0.7; // カウントダウン音の音量 (0〜1)
 const ENGINE_VOLUME = 0.18; // エンジン音の最大音量 (0〜1)
+
+let bgmVolume = BGM_VOLUME; // 現在の BGM 音量（スライダーで変更）。init前でも保持
+let countdownElement = null;
 
 let openingElement = null;
 
@@ -127,12 +132,12 @@ function setupBgm() {
   try {
     bgmSource = audioCtx.createMediaElementSource(bgmElement);
     bgmGain = audioCtx.createGain();
-    bgmGain.gain.value = BGM_VOLUME;
+    bgmGain.gain.value = bgmVolume;
     bgmSource.connect(bgmGain);
     bgmGain.connect(masterGain);
   } catch (err) {
     // createMediaElementSource が使えない場合は element 単体で鳴らす
-    bgmElement.volume = BGM_VOLUME;
+    bgmElement.volume = bgmVolume;
   }
 }
 
@@ -163,6 +168,42 @@ export function toggleMute() {
 
 export function isMuted() {
   return mutedState;
+}
+
+// ----- BGM 音量調整（コース選択画面・ポーズ画面のスライダー用） -----
+// value: 0〜1。init前でも値を保持し、init後は bgmGain にも反映する。
+export function setBgmVolume(value) {
+  bgmVolume = Math.min(1, Math.max(0, value));
+  if (bgmGain && audioCtx) {
+    bgmGain.gain.setTargetAtTime(bgmVolume, audioCtx.currentTime, 0.02);
+  } else if (bgmElement) {
+    // WebAudio を介さず element 単体で鳴らしている場合
+    bgmElement.volume = bgmVolume;
+  }
+  return bgmVolume;
+}
+
+export function getBgmVolume() {
+  return bgmVolume;
+}
+
+// ----- カウントダウン音 (321START.mp3) -----
+// レース開始の 3-2-1-START に合わせて1回再生する。ループしない。
+// AudioContext を介さず単独の Audio 要素で鳴らす（opening と同じ方式）。
+export function playCountdown() {
+  if (!countdownElement) {
+    countdownElement = new Audio(COUNTDOWN_URL);
+    countdownElement.loop = false;
+    countdownElement.volume = COUNTDOWN_VOLUME;
+    countdownElement.addEventListener('error', () => {
+      console.warn(`カウントダウン音が見つかりません (${COUNTDOWN_URL})。音なしで続行します。`);
+    });
+  }
+  countdownElement.currentTime = 0;
+  const p = countdownElement.play();
+  if (p && typeof p.catch === 'function') {
+    p.catch(() => { /* 自動再生ブロック時は無視 */ });
+  }
 }
 
 // ----- タイトル曲 (opening.mp3) -----

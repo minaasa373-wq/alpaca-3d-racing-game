@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { maps, defaultMapId, getMapById } from './maps.js';
-import { initAudio, updateEngine, playBgm, stopBgm, toggleMute, playOpening, stopOpening, stopEngine } from './audio.js';
+import { initAudio, updateEngine, playBgm, stopBgm, toggleMute, playOpening, stopOpening, stopEngine, setBgmVolume, getBgmVolume, playCountdown } from './audio.js';
 
 // ----- DOM References -----
 let canvas = document.getElementById('game-canvas');
@@ -37,11 +37,21 @@ const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
 
 const finishElements = {
   container: document.getElementById('race-finish'),
-  summary: document.getElementById('race-summary'),
-  summaryPoints: document.getElementById('summary-points'),
+  summaryTotal: document.getElementById('summary-total'),
   summaryBest: document.getElementById('summary-best'),
-  summaryLast: document.getElementById('summary-last')
+  summaryPoints: document.getElementById('summary-points'),
+  saveButton: document.getElementById('save-screenshot-btn')
 };
+
+// リザルト合成用に result.jpg を事前読み込み
+const resultFrameImage = new Image();
+let resultFrameImageReady = false;
+resultFrameImage.addEventListener('load', () => { resultFrameImageReady = true; });
+resultFrameImage.addEventListener('error', () => {
+  console.warn('result.jpg の読み込みに失敗しました。スクショは3D画面のみになります。');
+  resultFrameImageReady = false;
+});
+resultFrameImage.src = './assets/result.jpg';
 
 const mapSelectElements = {
   container: document.getElementById('map-select'),
@@ -52,6 +62,16 @@ const titleScreen = document.getElementById('title-screen');
 const pausePanel = {
   container: document.getElementById('pause-panel'),
   returnButton: document.getElementById('pause-return-title')
+};
+const countdownOverlay = document.getElementById('countdown-overlay');
+const countdownText = document.getElementById('countdown-text');
+
+// BGM音量スライダー（コース選択・ポーズの2か所。値は共有）
+const volumeSliders = {
+  map: document.getElementById('map-bgm-volume'),
+  mapValue: document.getElementById('map-bgm-volume-value'),
+  pause: document.getElementById('pause-bgm-volume'),
+  pauseValue: document.getElementById('pause-bgm-volume-value')
 };
 
 let mapConfig = null;
@@ -66,6 +86,8 @@ let mapLoaded = false;
 let animationStarted = false;
 let isPlaying = false; // ゲームプレイ中か（タイトル/コース選択中は false）
 let isPaused = false;  // Escパネル表示中（プレイ中の一時停止）
+let isCountingDown = false; // 3-2-1-START カウントダウン中か（入力を受け付けない）
+let countdownTimers = [];   // カウントダウン用のタイマーID（中断時にクリアする）
 
 const billboardGroups = [];
 const grandstandGroups = [];
@@ -76,7 +98,7 @@ const trackNormal = new THREE.Vector3();
 // ----- Constants -----
 const TRACK_HALF_WIDTH = 13; // コース幅。広めにしてコースアウトを軽減
 const CHECKPOINT_COUNT = 16;
-const CAR_RIDE_HEIGHT = 0.45;
+const CAR_RIDE_HEIGHT = 0.95; // 車体が地面にめり込まない高さ（タイヤ下端が接地）
 const CAR_COLLISION_RADIUS = 1.2;
 const NPC_COLLISION_RADIUS = 1.1;
 const COLLISION_RESTITUTION = 0.6;
@@ -86,7 +108,7 @@ const POINTS_PER_LAP = 500;
 const RACE_LAP_TARGET = 3;
 
 // ----- Renderer & Scene -----
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -915,11 +937,115 @@ function finishRace(reason) {
   if (raceState.finished) return;
   raceState.finished = true;
   if (finishElements.container) finishElements.container.classList.remove('hidden');
-  const summary = `${RACE_LAP_TARGET}周を完走！合計タイムは ${formatTime(raceState.elapsedTime)} でした。`;
-  if (finishElements.summary) finishElements.summary.textContent = summary;
-  if (finishElements.summaryPoints) finishElements.summaryPoints.textContent = raceState.points;
+  if (finishElements.summaryTotal) finishElements.summaryTotal.textContent = formatTime(raceState.elapsedTime);
   if (finishElements.summaryBest) finishElements.summaryBest.textContent = formatTime(lapTracker.bestLapTime);
-  if (finishElements.summaryLast) finishElements.summaryLast.textContent = formatTime(lapTracker.lastLapTime);
+  if (finishElements.summaryPoints) finishElements.summaryPoints.textContent = raceState.points;
+}
+
+// ----- リザルトのスクリーンショット保存（外部ライブラリ不使用） -----
+// 3D画面（WebGL canvas）＋ result.jpg の枠 ＋ 成績テキストを1枚に合成して保存する。
+function saveResultScreenshot() {
+  // 出力canvasをゲーム画面と同じ解像度で用意
+  const out = document.createElement('canvas');
+  const W = renderer.domElement.width;
+  const H = renderer.domElement.height;
+  out.width = W;
+  out.height = H;
+  const ctx = out.getContext('2d');
+  if (!ctx) return;
+
+  // (1) 背景＝3D画面のスナップショット
+  // 直前に一度レンダリングしてバッファを最新化（preserveDrawingBuffer前提）
+  renderer.render(scene, camera);
+  ctx.drawImage(renderer.domElement, 0, 0, W, H);
+
+  // (2) リザルト画面と同じ暗幕を重ねる
+  ctx.fillStyle = 'rgba(4, 6, 14, 0.78)';
+  ctx.fillRect(0, 0, W, H);
+
+  // (3) result.jpg の枠を中央に描く（CSSの width:min(1040px,95vw)/aspect 1672:941 を再現）
+  const frameAspect = 1672 / 941;
+  let frameW = Math.min(1040 * (W / window.innerWidth), W * 0.95);
+  let frameH = frameW / frameAspect;
+  const maxFrameH = H * 0.94;
+  if (frameH > maxFrameH) {
+    frameH = maxFrameH;
+    frameW = frameH * frameAspect;
+  }
+  const frameX = (W - frameW) / 2;
+  const frameY = (H - frameH) / 2;
+
+  if (resultFrameImageReady) {
+    ctx.drawImage(resultFrameImage, frameX, frameY, frameW, frameH);
+  }
+
+  // (4) 枠内の成績テキストを描く（CSS .race-result-content の領域に対応）
+  // 領域: 枠に対して left37%/right6%/top11%/bottom26%
+  const cx = frameX + frameW * 0.37;
+  const cRight = frameX + frameW * (1 - 0.06);
+  const cTop = frameY + frameH * 0.11;
+  const cBottom = frameY + frameH * (1 - 0.26);
+  const contentW = cRight - cx;
+  const contentH = cBottom - cTop;
+  const centerX = cx + contentW / 2;
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = 'rgba(40, 16, 70, 0.85)';
+  ctx.shadowBlur = frameW * 0.01;
+
+  // タイトル「レース終了」
+  const titleSize = frameW * 0.052;
+  ctx.font = `800 ${titleSize}px system-ui, sans-serif`;
+  ctx.fillStyle = '#ffe9a8';
+  ctx.fillText('レース終了', centerX, cTop + contentH * 0.12);
+
+  // 成績3項目（ラベルと値を同サイズで横並び・縦に均等）
+  const rows = [
+    ['合計タイム', finishElements.summaryTotal ? finishElements.summaryTotal.textContent : '--'],
+    ['ベストラップ', finishElements.summaryBest ? finishElements.summaryBest.textContent : '--'],
+    ['ポイント', finishElements.summaryPoints ? finishElements.summaryPoints.textContent : '0']
+  ];
+  const rowSize = frameW * 0.038;
+  ctx.font = `700 ${rowSize}px system-ui, sans-serif`;
+  const listTop = cTop + contentH * 0.34;
+  const listGap = contentH * 0.2;
+  const labelX = cx + contentW * 0.06;
+  const valueX = cRight - contentW * 0.06;
+
+  rows.forEach((row, i) => {
+    const y = listTop + listGap * i;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(224, 230, 255, 0.92)';
+    ctx.fillText(row[0], labelX, y);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#ffe066';
+    ctx.fillText(row[1], valueX, y);
+  });
+
+  ctx.shadowBlur = 0;
+
+  // (5) PNGとして保存（ダウンロード）
+  try {
+    out.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      a.href = url;
+      a.download = `あるぱかプリンスレーシング_記録_${stamp}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, 'image/png');
+  } catch (err) {
+    console.warn('スクリーンショットの保存に失敗しました:', err);
+  }
+}
+
+if (finishElements.saveButton) {
+  finishElements.saveButton.addEventListener('click', saveResultScreenshot);
 }
 
 function updateRaceClock(delta) {
@@ -1433,6 +1559,13 @@ function drawMinimap() {
 const clock = new THREE.Clock();
 updateHUD();
 
+function snapCameraBehindCar() {
+  const pivot = cameraTemp.copy(car.position).add(cameraLookOffset);
+  const offset = cameraOffsetTemp.copy(cameraBaseOffset).applyAxisAngle(new THREE.Vector3(0, 1, 0), carState.heading);
+  camera.position.copy(pivot).add(offset);
+  camera.lookAt(pivot);
+}
+
 function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.1);
@@ -1467,6 +1600,7 @@ function hideMapSelect() {
 }
 
 function showMapSelect() {
+  clearCountdownTimers(); // カウントダウン中にコース変更されたら中断
   if (mapSelectElements.container) mapSelectElements.container.classList.remove('hidden');
   // コース選択中はゲームを止める（裏で走り続けない・エンジン音も止まる）
   isPlaying = false;
@@ -1490,8 +1624,65 @@ function selectMap(mapId) {
   hideMapSelect();
   startAnimationLoop();
   initAudio();  // ユーザー操作（コース選択クリック）の中なので自動再生制限を回避できる
-  playBgm();
-  isPlaying = true; // ゲーム開始
+  startCountdown(); // 3-2-1-START のあとにゲーム開始＆BGM
+}
+
+// 3-2-1-START カウントダウン。終了時に onComplete を呼ぶ。
+function startCountdown() {
+  clearCountdownTimers();
+  isCountingDown = true;
+  isPlaying = false; // カウント中は走行入力を受け付けない（車は停止）
+  isPaused = false;
+
+  // 念のため入力状態をリセット
+  inputState.forward = false;
+  inputState.brake = false;
+  inputState.left = false;
+  inputState.right = false;
+  mouseState.accelerating = false;
+
+  snapCameraBehindCar(); // カウントダウン中、車の背後にカメラを置いておく
+
+  stopOpening(); // タイトル曲が鳴っていれば止める（カウントダウン音と重ねない）
+  playCountdown(); // 321START.mp3 を再生（音と表示を合わせる）
+
+  const steps = ['3', '2', '1', 'START'];
+  if (countdownOverlay) countdownOverlay.classList.remove('hidden');
+
+  steps.forEach((label, index) => {
+    const timer = setTimeout(() => {
+      showCountdownStep(label);
+      // START 表示と同時にゲーム開始＆BGM再生
+      if (label === 'START') {
+        isCountingDown = false;
+        isPlaying = true;
+        playBgm();
+        // START の表示を少し見せてから消す
+        const hideTimer = setTimeout(() => {
+          if (countdownOverlay) countdownOverlay.classList.add('hidden');
+        }, 800);
+        countdownTimers.push(hideTimer);
+      }
+    }, index * 1000); // 各1秒
+    countdownTimers.push(timer);
+  });
+}
+
+function showCountdownStep(label) {
+  if (!countdownText || !countdownOverlay) return;
+  countdownText.textContent = label;
+  countdownText.classList.toggle('is-start', label === 'START');
+  // アニメーションを毎回付け直す（reflowで再発火させる）
+  countdownText.classList.remove('pop');
+  void countdownText.offsetWidth;
+  countdownText.classList.add('pop');
+}
+
+function clearCountdownTimers() {
+  countdownTimers.forEach((id) => clearTimeout(id));
+  countdownTimers = [];
+  isCountingDown = false;
+  if (countdownOverlay) countdownOverlay.classList.add('hidden');
 }
 
 function setupMapSelection() {
@@ -1564,6 +1755,7 @@ function hidePausePanel() {
 }
 
 function returnToTitle() {
+  clearCountdownTimers(); // カウントダウン中に戻る場合も中断
   hidePausePanel();
   hideMapSelect();
   if (finishElements.container) finishElements.container.classList.add('hidden');
@@ -1575,7 +1767,36 @@ function returnToTitle() {
 
 if (pausePanel.returnButton) pausePanel.returnButton.addEventListener('click', returnToTitle);
 
+// BGM音量スライダーの初期化。2つのスライダーを連動させ、audio.jsへ反映する。
+function setupVolumeControls() {
+  const initialPercent = Math.round(getBgmVolume() * 100);
+
+  const applyVolume = (percent, source) => {
+    const clamped = Math.min(100, Math.max(0, percent));
+    setBgmVolume(clamped / 100);
+    // 両方のスライダーと数値表示を同期（変更元以外も更新）
+    if (volumeSliders.map && source !== 'map') volumeSliders.map.value = clamped;
+    if (volumeSliders.pause && source !== 'pause') volumeSliders.pause.value = clamped;
+    if (volumeSliders.mapValue) volumeSliders.mapValue.textContent = clamped;
+    if (volumeSliders.pauseValue) volumeSliders.pauseValue.textContent = clamped;
+  };
+
+  // 初期値をスライダーと表示に反映
+  if (volumeSliders.map) volumeSliders.map.value = initialPercent;
+  if (volumeSliders.pause) volumeSliders.pause.value = initialPercent;
+  if (volumeSliders.mapValue) volumeSliders.mapValue.textContent = initialPercent;
+  if (volumeSliders.pauseValue) volumeSliders.pauseValue.textContent = initialPercent;
+
+  if (volumeSliders.map) {
+    volumeSliders.map.addEventListener('input', (e) => applyVolume(Number(e.target.value), 'map'));
+  }
+  if (volumeSliders.pause) {
+    volumeSliders.pause.addEventListener('input', (e) => applyVolume(Number(e.target.value), 'pause'));
+  }
+}
+
 setupMapSelection();
+setupVolumeControls();
 showTitleScreen();
 
 window.addEventListener('resize', () => {
