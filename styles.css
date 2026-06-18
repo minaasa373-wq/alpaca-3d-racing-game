@@ -190,8 +190,14 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(6, 8, 16, 0.86);
-  backdrop-filter: blur(12px);
+  background-image:
+    linear-gradient(rgba(6, 8, 16, 0.72), rgba(6, 8, 16, 0.82)),
+    url('./assets/title.jpg');
+  background-size: cover, contain;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  background-color: #1a1030;
+  backdrop-filter: blur(2px);
   z-index: 30;
   transition: opacity 0.25s ease;
 }
@@ -307,8 +313,9 @@ html, body {
   inset: 0;
   z-index: 40;
   background-image: url('./assets/title.jpg');
-  background-size: cover;
+  background-size: contain;
   background-position: center;
+  background-repeat: no-repeat;
   background-color: #1a1030;
   display: flex;
   align-items: flex-end;
