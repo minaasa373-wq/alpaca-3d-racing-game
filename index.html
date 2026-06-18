@@ -7,7 +7,12 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div id="map-select" class="map-select">
+    <!-- タイトル画面 -->
+    <div id="title-screen" class="title-screen">
+      <div class="title-start-hint">クリックしてスタート</div>
+    </div>
+
+    <div id="map-select" class="map-select hidden">
       <div class="map-select-panel">
         <h2>コースを選ぶ</h2>
         <p class="map-select-hint">走るサーキットを選んでください。プレイ中に L キーでいつでもこのメニューを開けます。</p>
@@ -17,7 +22,7 @@
     <div id="overlay">
       <div class="hud-header">
         <h1>あるぱかプリンス レーシング</h1>
-        <p class="hud-instructions">矢印キーまたは WASD で運転。R で位置リセット。M でミニマップ切替。L でコース変更。</p>
+        <p class="hud-instructions">矢印キーまたは WASD で運転。マウス左クリックで加速。スペースでブレーキ。R で位置リセット。M でミニマップ切替。L でコース変更。B で音オン/オフ。Esc でタイトルへ戻る。</p>
       </div>
       <div class="hud-stats">
         <div class="hud-card">
@@ -72,6 +77,18 @@
         <p class="race-instructions">R キーでレースをリスタート。</p>
       </div>
     </div>
+
+    <!-- Esc 確認ダイアログ -->
+    <div id="confirm-title" class="confirm-dialog hidden">
+      <div class="confirm-panel">
+        <p class="confirm-message">タイトルに戻りますか？</p>
+        <div class="confirm-buttons">
+          <button type="button" id="confirm-yes" class="confirm-btn confirm-yes">はい</button>
+          <button type="button" id="confirm-no" class="confirm-btn confirm-no">いいえ</button>
+        </div>
+      </div>
+    </div>
+
     <script type="importmap">
       {
         "imports": {
@@ -80,7 +97,6 @@
         }
       }
     </script>
-    <script type="module" src="./src/main.js"></script>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>
