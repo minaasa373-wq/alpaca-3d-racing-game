@@ -6,7 +6,7 @@
 // ブラウザの自動再生制限があるため、最初のユーザー操作（クリック/キー）まで
 // 音声は鳴らせない。init() を操作イベントの中で呼ぶこと。
 
-const BGM_URL = '../assets/bgm.mp3';
+const BGM_URL = './assets/bgm.mp3';
 const BGM_VOLUME = 0.45;   // BGM の音量 (0〜1)
 const ENGINE_VOLUME = 0.18; // エンジン音の最大音量 (0〜1)
 
