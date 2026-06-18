@@ -953,6 +953,11 @@ const KEY_BINDINGS = {
   ArrowUp: 'forward', ArrowDown: 'backward', ArrowLeft: 'left', ArrowRight: 'right',
   w: 'forward', s: 'backward', a: 'left', d: 'right'
 };
+// マウス操作の状態
+const mouseState = {
+  steer: 0,        // -1(左) 〜 +1(右) のアナログ値
+  accelerating: false // 左クリック長押し中か
+};
 
 function resolveBinding(key) {
   return KEY_BINDINGS[key] ?? KEY_BINDINGS[key.toLowerCase()];
@@ -993,7 +998,14 @@ window.addEventListener('keydown', (event) => {
     placeCarAtStart();
   }
 });
-
+if (event.code === 'Space') {
+    event.preventDefault();
+    inputState.backward = true; // スペースでブレーキ／後退
+  }
+if (event.code === 'Space') {
+    event.preventDefault();
+    inputState.backward = false;
+  }
 window.addEventListener('keyup', (event) => {
   const mapMenuVisible = mapSelectElements.container && !mapSelectElements.container.classList.contains('hidden');
   if (mapMenuVisible) return;
@@ -1002,6 +1014,40 @@ window.addEventListener('keyup', (event) => {
     event.preventDefault();
     inputState[binding] = false;
   }
+});
+
+// ----- マウス操作 -----
+// マウスの左右位置でステアリング、左クリック長押しで加速
+window.addEventListener('mousemove', (event) => {
+  // 画面中央を0として、左端=-1 / 右端=+1 に正規化
+  const centerX = window.innerWidth / 2;
+  const normalized = (event.clientX - centerX) / centerX;
+  mouseState.steer = clamp(normalized, -1, 1);
+});
+
+window.addEventListener('mousedown', (event) => {
+  // 左クリック(button 0)で加速
+  const mapMenuVisible = mapSelectElements.container && !mapSelectElements.container.classList.contains('hidden');
+  if (mapMenuVisible) return; // メニュー表示中は無効
+  if (event.button === 0) {
+    mouseState.accelerating = true;
+  }
+});
+
+window.addEventListener('mouseup', (event) => {
+  if (event.button === 0) {
+    mouseState.accelerating = false;
+  }
+});
+
+// 画面外にマウスが出たら加速解除（押しっぱなし暴走防止）
+window.addEventListener('mouseleave', () => {
+  mouseState.accelerating = false;
+});
+
+// 右クリックメニューを抑制（誤操作防止）
+window.addEventListener('contextmenu', (event) => {
+  event.preventDefault();
 });
 
 // ----- Minimap Helpers -----
@@ -1090,7 +1136,9 @@ function updateCar(delta) {
     return;
   }
 
-  if (inputState.forward) carState.speed += 55 * delta;
+// 加速: キーボード前進 または マウス左クリック長押し
+  const accelerating = inputState.forward || mouseState.accelerating;
+  if (accelerating) carState.speed += 55 * delta;
   else if (inputState.backward) carState.speed -= 65 * delta;
   else carState.speed = smoothApproach(carState.speed, 0, 12, delta);
 
@@ -1098,8 +1146,13 @@ function updateCar(delta) {
 
   const speedFactor = clamp(Math.abs(carState.speed) / carState.maxSpeed, 0, 1);
   const steeringDelta = 2.8 * (0.35 + 0.65 * speedFactor) * delta;
+  // キーボードのステアリング
   if (inputState.left) carState.heading += steeringDelta;
   if (inputState.right) carState.heading -= steeringDelta;
+  // マウスのステアリング（傾き量に応じて滑らかに曲がる）
+  if (mouseState.steer !== 0) {
+    carState.heading -= mouseState.steer * steeringDelta;
+  }
 
   forwardVector.set(Math.sin(carState.heading), 0, Math.cos(carState.heading));
   carVelocity.copy(forwardVector).multiplyScalar(carState.speed);
