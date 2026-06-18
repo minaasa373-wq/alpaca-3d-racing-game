@@ -65,6 +65,7 @@ let trackLightGroup = null;
 let ambientMist = null;
 let mapLoaded = false;
 let animationStarted = false;
+let isPlaying = false; // ゲームプレイ中か（タイトル/コース選択中は false）
 
 const billboardGroups = [];
 const grandstandGroups = [];
@@ -1052,6 +1053,7 @@ window.addEventListener('keyup', (event) => {
 // 左クリック長押しで加速（ステアリングはキーボードのみ）
 window.addEventListener('mousedown', (event) => {
   // 左クリック(button 0)で加速
+  if (!isPlaying) return; // プレイ中以外（タイトル/コース選択）は無効
   const mapMenuVisible = mapSelectElements.container && !mapSelectElements.container.classList.contains('hidden');
   if (mapMenuVisible) return; // メニュー表示中は無効
   if (event.button === 0) {
@@ -1430,6 +1432,12 @@ function animate() {
     renderer.render(scene, camera);
     return;
   }
+  // タイトル/コース選択中はゲームを更新せず、エンジン音も止める
+  if (!isPlaying) {
+    stopEngine();
+    renderer.render(scene, camera);
+    return;
+  }
   updateCar(delta);
   updateEngine(carState.speed, carState.maxSpeed); // エンジン音を速度に連動
   updateLapTimer(delta);
@@ -1468,6 +1476,7 @@ function selectMap(mapId) {
   startAnimationLoop();
   initAudio();  // ユーザー操作（コース選択クリック）の中なので自動再生制限を回避できる
   playBgm();
+  isPlaying = true; // ゲーム開始
 }
 
 function setupMapSelection() {
@@ -1534,6 +1543,7 @@ function returnToTitle() {
   hideConfirmDialog();
   hideMapSelect();
   if (finishElements.container) finishElements.container.classList.add('hidden');
+  isPlaying = false; // ゲーム停止（animateループ内でエンジン音も止まる）
   stopBgm();
   stopEngine(); // エンジン音も止める
   showTitleScreen();
