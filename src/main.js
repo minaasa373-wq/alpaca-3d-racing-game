@@ -1,4 +1,5 @@
-import * as THREE from '../vendor/three.module.js';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { maps, defaultMapId, getMapById } from './maps.js';
 import { initAudio, updateEngine, playBgm, stopBgm, toggleMute } from './audio.js';
 
