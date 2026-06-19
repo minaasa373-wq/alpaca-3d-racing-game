@@ -117,8 +117,8 @@ html, body {
 /* リザルト画面：result.jpg の額縁の中に成績を表示する */
 .race-result-frame {
   position: relative;
-  width: min(1040px, 95vw);
-  aspect-ratio: 1672 / 941;
+  width: min(1100px, 95vw);
+  aspect-ratio: 1280 / 720;
   max-height: 82vh; /* 下の保存ボタンが見切れないよう余白を残す */
   background-image: url('./assets/result.jpg');
   background-size: contain;
@@ -127,11 +127,11 @@ html, body {
   filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.55));
 }
 
-/* タイトルとコース名は枠の飾りのセンター（宝石・クラウンと同じ65%）に揃える */
+/* タイトルとコース名は画像中央（クラウン・宝石装飾と同じセンター）に揃える */
 .race-result-title {
   position: absolute;
-  top: 14%;
-  left: 65%;
+  top: 27%;
+  left: 50%;
   transform: translateX(-50%);
   margin: 0;
   font-size: clamp(1.6rem, 3.6vw, 3rem);
@@ -142,11 +142,11 @@ html, body {
   white-space: nowrap;
 }
 
-/* 走ったコース名（タイトルと同じく飾りのセンターに揃える） */
+/* 走ったコース名（タイトルと同じく中央に揃える） */
 .race-result-course {
   position: absolute;
-  top: 26%;
-  left: 65%;
+  top: 38%;
+  left: 50%;
   transform: translateX(-50%);
   margin: 0;
   font-size: clamp(0.85rem, 1.9vw, 1.35rem);
@@ -160,10 +160,10 @@ html, body {
 /* 額縁の内側（紫の表示領域）に重ねるコンテンツ領域（成績3項目＋案内） */
 .race-result-content {
   position: absolute;
-  top: 36%;
-  left: 37%;
-  right: 6%;
-  bottom: 30%;
+  top: 44%;
+  left: 23%;
+  right: 22%;
+  bottom: 28%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -377,8 +377,7 @@ html, body {
   }
 
   .race-result-content {
-    bottom: 28%;
-    top: 11%;
+    bottom: 26%;
   }
 
   .result-row {
