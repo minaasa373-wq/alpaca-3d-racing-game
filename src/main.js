@@ -965,9 +965,9 @@ function saveResultScreenshot() {
   ctx.fillStyle = 'rgba(4, 6, 14, 0.78)';
   ctx.fillRect(0, 0, W, H);
 
-  // (3) result.jpg の枠を中央に描く（CSSの width:min(1040px,95vw)/aspect 1672:941 を再現）
-  const frameAspect = 1672 / 941;
-  let frameW = Math.min(1040 * (W / window.innerWidth), W * 0.95);
+  // (3) result.jpg の枠を中央に描く（CSSの width:min(1100px,95vw)/aspect 1280:720 を再現）
+  const frameAspect = 1280 / 720;
+  let frameW = Math.min(1100 * (W / window.innerWidth), W * 0.95);
   let frameH = frameW / frameAspect;
   const maxFrameH = H * 0.94;
   if (frameH > maxFrameH) {
@@ -981,34 +981,28 @@ function saveResultScreenshot() {
     ctx.drawImage(resultFrameImage, frameX, frameY, frameW, frameH);
   }
 
-  // (4) 枠内の成績テキストを描く（CSS .race-result-content の領域に対応）
-  // 領域: 枠に対して left37%/right6%/top11%/bottom26%
-  const cx = frameX + frameW * 0.37;
-  const cRight = frameX + frameW * (1 - 0.06);
-  const cTop = frameY + frameH * 0.11;
-  const cBottom = frameY + frameH * (1 - 0.26);
-  const contentW = cRight - cx;
-  const contentH = cBottom - cTop;
-  const centerX = cx + contentW / 2;
+  // (4) 枠内の成績テキストを描く（CSSのリザルト配置に対応）
+  // 画像中央（クラウン・宝石装飾と同じセンター）を基準に縦に並べる
+  const centerX = frameX + frameW * 0.5;
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.shadowColor = 'rgba(40, 16, 70, 0.85)';
-  ctx.shadowBlur = frameW * 0.01;
+  ctx.shadowBlur = frameW * 0.008;
 
-  // タイトル「レース終了」
-  const titleSize = frameW * 0.052;
+  // タイトル「レース終了」（CSS top27%）
+  const titleSize = frameW * 0.05;
   ctx.font = `800 ${titleSize}px system-ui, sans-serif`;
   ctx.fillStyle = '#ffe9a8';
-  ctx.fillText('レース終了', centerX, cTop + contentH * 0.1);
+  ctx.fillText('レース終了', centerX, frameY + frameH * 0.29);
 
-  // 走ったコース名
+  // 走ったコース名（CSS top38%）
   const courseName = finishElements.summaryCourse ? finishElements.summaryCourse.textContent : '';
   if (courseName && courseName !== '--') {
-    const courseSize = frameW * 0.028;
+    const courseSize = frameW * 0.026;
     ctx.font = `700 ${courseSize}px system-ui, sans-serif`;
     ctx.fillStyle = '#e8c9ff';
-    ctx.fillText(courseName, centerX, cTop + contentH * 0.24);
+    ctx.fillText(courseName, centerX, frameY + frameH * 0.395);
   }
 
   // 成績3項目（ラベルと値を同サイズで横並び・縦に均等）
@@ -1017,12 +1011,12 @@ function saveResultScreenshot() {
     ['ベストラップ', finishElements.summaryBest ? finishElements.summaryBest.textContent : '--'],
     ['ポイント', finishElements.summaryPoints ? finishElements.summaryPoints.textContent : '0']
   ];
-  const rowSize = frameW * 0.038;
+  const rowSize = frameW * 0.036;
   ctx.font = `700 ${rowSize}px system-ui, sans-serif`;
-  const listTop = cTop + contentH * 0.42;
-  const listGap = contentH * 0.19;
+  const listTop = frameY + frameH * 0.49;
+  const listGap = frameH * 0.085;
   // 中央を挟んでラベル(右寄せ)と値(左寄せ)を配置し、間隔を詰める
-  const gapHalf = contentW * 0.04;
+  const gapHalf = frameW * 0.02;
   const labelX = centerX - gapHalf;
   const valueX = centerX + gapHalf;
 
